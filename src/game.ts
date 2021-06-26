@@ -71,7 +71,6 @@ const charToObj = {
   " ": () => ({ ...x }),
 };
 
-type Field = Spot[][];
 export function createSimpleField() {
   const malefitzField = `
         g        
@@ -104,13 +103,25 @@ uuRuuuGuuuYuuuBuu`;
   return undirected;
 }
 
-function createField() {
-  const startingPoint = { x: 7, y: 14 };
-  const visited = [startingPoint];
-  let curr;
-  while ((curr = visited.pop())) {
-    //const couldComeFrom = oneStepAway[k];
-    //curr.comesFrom();
+export function connectField(f) {
+  const startingPoint = { x: 8, y: 14 };
+  const pointToString = (p) => `${p.x}-${p.y}`;
+  const visited: string[] = [pointToString(startingPoint)];
+  const stack: Position[] = [startingPoint];
+  let currPos: Position | undefined;
+
+  while ((currPos = stack.pop())) {
+    const currentSpot = access(f, currPos);
+    const neighbourPos = onePosAway(f, currPos).filter(
+      (p) => !visited.includes(pointToString(p))
+    );
+    const neighbourSpots = neighbourPos.map((p) => access(f, p));
+
+    currentSpot.comesFrom.push(...neighbourSpots);
+    neighbourSpots.forEach((n) => n.leadsTo.push(currentSpot));
+
+    visited.push(`${currPos.x}-${currPos.y}`);
+    stack.push(...neighbourPos);
   }
 }
 
@@ -127,7 +138,7 @@ function comparePosition(p1: Position, p2: Position) {
 const moves: Move[] = ["UP", "DOWN", "LEFT", "RIGHT"];
 type Move = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
-export function oneStepAway(f, p: Position) {
+export function onePosAway(f, p: Position): Position[] {
   if (access(f, p).contains === "OUTSIDE") return [];
 
   const directions = {
@@ -136,12 +147,17 @@ export function oneStepAway(f, p: Position) {
     RIGHT: { x: 1, y: 0 },
     LEFT: { x: -1, y: 0 },
   };
+
   return moves
     .map((move) => {
       const dir = directions[move];
-      return access(f, { x: p.x + dir.x, y: p.y + dir.y });
+      return { x: p.x + dir.x, y: p.y + dir.y };
     })
-    .filter((p) => p.contains !== "OUTSIDE");
+    .filter((p) => access(f, p).contains !== "OUTSIDE");
+}
+
+export function oneStepAway(f, p: Position): Spot[] {
+  return onePosAway(f, p).map((p1) => access(f, p1));
 }
 
 function possibleMoves(spots: Spot[], distance: number): Spot[] {
