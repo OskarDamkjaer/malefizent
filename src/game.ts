@@ -72,15 +72,8 @@ const charToObj = {
 };
 
 type Field = Spot[][];
-
-function createField() {
-  //  ^ y+
-  //  |
-  //  |
-  //  |
-  //  0------> x+
-  const visited = [{ x: 7, y: 14 }];
-  const undirected = `
+export function createSimpleField() {
+  const malefitzField = `
         g        
 nnnnnnnnbnnnnnnnn
 n               n
@@ -95,23 +88,34 @@ nnnnnnnnbnnnnnnnn
   n   n   n   n  
 bnnnbnnnbnnnbnnnb
 u   u   u   u   u
-uuRuuuGuuuYuuuBuu`
+uuRuuuGuuuYuuuBuu`;
+
+  //  ^ y+
+  //  |
+  //  |
+  //  |
+  //  0------> x+
+  const undirected = malefitzField
     .split("\n")
+    .slice(1)
+    .reverse()
     .map((line) => line.split("").map((char) => charToObj[char]()));
 
-  let curr;
-  while ((curr = visited.pop())) {
-    const couldComeFrom = oneStepAway[k];
-    curr.comesFrom();
-  }
-
-  console.log(positionToSpot(startingPoint));
+  return undirected;
 }
 
-let playingField = createField();
+function createField() {
+  const startingPoint = { x: 7, y: 14 };
+  const visited = [startingPoint];
+  let curr;
+  while ((curr = visited.pop())) {
+    //const couldComeFrom = oneStepAway[k];
+    //curr.comesFrom();
+  }
+}
 
-function positionToSpot({ x, y }: Position): Spot {
-  return playingField[y][x];
+export function access(field, { x, y }: Position): Spot | undefined {
+  return (field[y] && field[y][x]) || { contains: "OUTSIDE" };
 }
 
 function availableMoves(roll: number, player: Color) {}
@@ -123,7 +127,9 @@ function comparePosition(p1: Position, p2: Position) {
 const moves: Move[] = ["UP", "DOWN", "LEFT", "RIGHT"];
 type Move = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
-function oneStepAway(p: Position) {
+export function oneStepAway(f, p: Position) {
+  if (access(f, p).contains === "OUTSIDE") return [];
+
   const directions = {
     UP: { x: 0, y: 1 },
     DOWN: { x: 0, y: -1 },
@@ -133,9 +139,9 @@ function oneStepAway(p: Position) {
   return moves
     .map((move) => {
       const dir = directions[move];
-      return { x: p.x + dir.x, y: p.y + dir.y };
+      return access(f, { x: p.x + dir.x, y: p.y + dir.y });
     })
-    .filter((p) => positionToSpot(p).contains !== "OUTSIDE");
+    .filter((p) => p.contains !== "OUTSIDE");
 }
 
 function possibleMoves(spots: Spot[], distance: number): Spot[] {
@@ -144,9 +150,9 @@ function possibleMoves(spots: Spot[], distance: number): Spot[] {
   return [];
 }
 
-export function getCurrentPlayingField(): Field {
-  return playingField;
-}
+//export function getCurrentPlayingField(): Field {
+//return playingField;
+//}
 
 let turn = 0;
 const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
