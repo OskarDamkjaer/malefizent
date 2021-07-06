@@ -103,13 +103,30 @@ uuRuuuGuuuYuuuBuu`;
   return undirected;
 }
 
+/*
+export function connectField(f: Spot[][]): void {
+  f.forEach((row, x) =>
+    row.forEach((curr, y) => {
+      const neighbourPos = onePosAway(f, { x, y });
+      const neighbourSpots = neighbourPos.map((p) => access(f, p));
+      curr.comesFrom.push(...neighbourSpots);
+      neighbourSpots.forEach((n) => n.leadsTo.push(curr));
+    })
+  );
+}
+// spara alla vägar, undirected cyclic graph
+// spara alla vägar 
+*/
 export function connectField(f) {
+  const path;
   const startingPoint = { x: 8, y: 14 };
   const pointToString = (p) => `${p.x}-${p.y}`;
   const visited: string[] = [pointToString(startingPoint)];
   const stack: Position[] = [startingPoint];
   let currPos: Position | undefined;
 
+  // TODO gör denna mindre komplicerad. gå igenom varje med en for loop istället
+  // TODO räkna steg från
   while ((currPos = stack.pop())) {
     const currentSpot = access(f, currPos);
     const neighbourPos = onePosAway(f, currPos).filter(
