@@ -7,6 +7,7 @@ export type Spot = {
   startingPointColor?: Color;
   connectedTo: Position[];
   unBarricadeable?: boolean;
+  goalDistance?: number;
 };
 
 // TODO change data structure to make goal and empty implicit
@@ -39,6 +40,7 @@ const G = {
   contains: "NORMAL",
   startingPointColor: "GREEN",
   connectedTo: [],
+  goalDistance: 0,
 };
 const Y = {
   contains: "NORMAL",
@@ -64,7 +66,7 @@ const charToObj = {
   " ": () => ({ ...x }),
 };
 
-export function createSimpleField() {
+export function createSimpleField(): Spot[][] {
   const malefitzField = `
         g        
 nnnnnnnnbnnnnnnnn
@@ -96,12 +98,9 @@ uuRuuuGuuuYuuuBuu`;
   return undirected;
 }
 
-// spara alla vägar, undirected cyclic graph
-// spara alla vägar
-
 const pointToString = (p) => `${p.x}-${p.y}`;
 
-export function connectField(f: Position[][]): void {
+export function connectField(f: Spot[][]): void {
   const startingPoint = { x: 8, y: 14 };
   const visited: string[] = [pointToString(startingPoint)];
   const stack: Position[] = [startingPoint];
@@ -109,25 +108,23 @@ export function connectField(f: Position[][]): void {
 
   // TODO gör denna mindre komplicerad. gå igenom varje med en for loop istället
   // TODO räkna steg från
-  const goalDistance = {};
-  const steps = 0;
   while ((currPos = stack.shift())) {
-    const curr = access(f, currPos);
+    const currSpot = access(f, currPos);
     const neighbourPos = onePosAway(f, currPos).filter(
       (p) => !visited.includes(pointToString(p))
     );
 
-    curr.connectedTo.push(...neighbourPos);
+    currSpot.connectedTo.push(...neighbourPos);
 
     neighbourPos
       .map((n) => access(f, n))
       .forEach((spot) => {
         spot.connectedTo.push(currPos);
+        spot.goalDistance = (currSpot.goalDistance || 0) + 1;
       });
 
     visited.push(pointToString(currPos));
     stack.push(...neighbourPos);
-    goalDistance[pointToString(currPos)] = steps;
   }
 }
 
@@ -184,4 +181,10 @@ function tick() {
   turn += 1;
   const roll = Math.floor(Math.random() * 6);
   return [player, availableMoves(roll, player)];
+}
+
+export function createField(): Spot[][] {
+  const field = createSimpleField();
+  connectField(field);
+  return field.reverse();
 }

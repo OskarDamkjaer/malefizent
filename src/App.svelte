@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { playingField } from "./game";
+  import { createField } from "./game";
   import Spot from "./Spot.svelte";
+  const field = createField();
 </script>
 
 <main>
-  {#each playingField as row}
+  {#each field as row}
     <div class="row">
       {#each row as spot}
         <Spot {spot} />

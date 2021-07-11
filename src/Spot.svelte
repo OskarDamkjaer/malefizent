@@ -1,5 +1,7 @@
 <script lang="ts">
-  export let spot;
+  import type { Spot } from "./game";
+
+  export let spot: Spot;
   const { contains } = spot;
 </script>
 
