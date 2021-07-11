@@ -16,27 +16,23 @@ test("oneStepAway", () => {
   expect(onePosAway(field, GOAL_POSITION)).toEqual([{ x: 8, y: 13 }]);
   expect(oneStepAway(field, GOAL_POSITION)).toEqual([
     {
-      comesFrom: [],
       contains: "BARRICADE",
-      leadsTo: [],
+      connectedTo: [],
     },
   ]);
 
   expect(oneStepAway(field, { x: 8, y: 11 })).toEqual([
     {
-      comesFrom: [],
+      connectedTo: [],
       contains: "BARRICADE",
-      leadsTo: [],
     },
     {
-      comesFrom: [],
+      connectedTo: [],
       contains: "NORMAL",
-      leadsTo: [],
     },
     {
-      comesFrom: [],
+      connectedTo: [],
       contains: "NORMAL",
-      leadsTo: [],
     },
   ]);
 });
@@ -45,33 +41,28 @@ test("access", () => {
   expect(access(field, { x: 0, y: 0 })).toEqual({
     contains: "NORMAL",
     unBarricadeable: true,
-    leadsTo: [],
-    comesFrom: [],
+    connectedTo: [],
   });
 
   expect(access(field, { x: 0, y: 2 })).toEqual({
     contains: "BARRICADE",
-    leadsTo: [],
-    comesFrom: [],
+    connectedTo: [],
   });
 
   expect(access(field, GOAL_POSITION)).toEqual({
     contains: "GOAL",
-    leadsTo: [],
-    comesFrom: [],
+    connectedTo: [],
   });
 
   expect(access(field, { x: 8, y: 13 })).toEqual({
     contains: "BARRICADE",
-    leadsTo: [],
-    comesFrom: [],
+    connectedTo: [],
   });
 });
 
 test("createField", () => {
   connectField(field);
   const g = access(field, GOAL_POSITION);
-  expect(g.leadsTo).toEqual([]);
-  expect(g.comesFrom[0].contains).toEqual("BARRICADE");
-  expect(g.comesFrom[0].comesFrom.length).toEqual(2);
+  expect(g.connectedTo.length).toEqual(1);
+  expect(access(field, g.connectedTo[0]).contains).toEqual("BARRICADE");
 });

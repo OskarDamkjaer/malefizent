@@ -5,8 +5,7 @@ export type Spot = {
 
   currentPawn?: Pawn;
   startingPointColor?: Color;
-  leadsTo: Spot[];
-  comesFrom: Spot[];
+  connectedTo: Position[];
   unBarricadeable?: boolean;
 };
 
@@ -17,45 +16,39 @@ type Position = { x: number; y: number };
 // Börja med enkelt först
 // TODO make iterable
 
-const x = { contains: "OUTSIDE", leadsTo: [], comesFrom: [] };
-const n = { contains: "NORMAL", leadsTo: [], comesFrom: [] };
-const b = { contains: "BARRICADE", leadsTo: [], comesFrom: [] };
-const g = { contains: "GOAL", leadsTo: [], comesFrom: [] };
+const x = { contains: "OUTSIDE", connectedTo: [] };
+const n = { contains: "NORMAL", connectedTo: [] };
+const b = { contains: "BARRICADE", connectedTo: [] };
+const g = { contains: "GOAL", connectedTo: [] };
 const u = {
   contains: "NORMAL",
   unBarricadeable: true,
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const p = {
   contains: "PAWN",
   currentPawn: { color: "BLUE" },
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const R = {
   contains: "NORMAL",
   startingPointColor: "RED",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const G = {
   contains: "NORMAL",
   startingPointColor: "GREEN",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const Y = {
   contains: "NORMAL",
   startingPointColor: "YELLOW",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const B = {
   contains: "NORMAL",
   startingPointColor: "BLUE",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 
 const charToObj = {
@@ -103,42 +96,38 @@ uuRuuuGuuuYuuuBuu`;
   return undirected;
 }
 
-/*
-export function connectField(f: Spot[][]): void {
-  f.forEach((row, x) =>
-    row.forEach((curr, y) => {
-      const neighbourPos = onePosAway(f, { x, y });
-      const neighbourSpots = neighbourPos.map((p) => access(f, p));
-      curr.comesFrom.push(...neighbourSpots);
-      neighbourSpots.forEach((n) => n.leadsTo.push(curr));
-    })
-  );
-}
 // spara alla vägar, undirected cyclic graph
-// spara alla vägar 
-*/
-export function connectField(f) {
-  const path;
+// spara alla vägar
+
+const pointToString = (p) => `${p.x}-${p.y}`;
+
+export function connectField(f: Position[][]): void {
   const startingPoint = { x: 8, y: 14 };
-  const pointToString = (p) => `${p.x}-${p.y}`;
   const visited: string[] = [pointToString(startingPoint)];
   const stack: Position[] = [startingPoint];
   let currPos: Position | undefined;
 
   // TODO gör denna mindre komplicerad. gå igenom varje med en for loop istället
   // TODO räkna steg från
-  while ((currPos = stack.pop())) {
-    const currentSpot = access(f, currPos);
+  const goalDistance = {};
+  const steps = 0;
+  while ((currPos = stack.shift())) {
+    const curr = access(f, currPos);
     const neighbourPos = onePosAway(f, currPos).filter(
       (p) => !visited.includes(pointToString(p))
     );
-    const neighbourSpots = neighbourPos.map((p) => access(f, p));
 
-    currentSpot.comesFrom.push(...neighbourSpots);
-    neighbourSpots.forEach((n) => n.leadsTo.push(currentSpot));
+    curr.connectedTo.push(...neighbourPos);
 
-    visited.push(`${currPos.x}-${currPos.y}`);
+    neighbourPos
+      .map((n) => access(f, n))
+      .forEach((spot) => {
+        spot.connectedTo.push(currPos);
+      });
+
+    visited.push(pointToString(currPos));
     stack.push(...neighbourPos);
+    goalDistance[pointToString(currPos)] = steps;
   }
 }
 
