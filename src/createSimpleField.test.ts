@@ -60,7 +60,7 @@ test("access", () => {
   });
 });
 
-test("createField", () => {
+test("connectField", () => {
   connectField(field);
   const g = access(field, GOAL_POSITION);
   expect(g.connectedTo.length).toEqual(1);

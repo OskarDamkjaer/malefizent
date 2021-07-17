@@ -2,7 +2,6 @@ type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
 type Pawn = { color: Color };
 export type Spot = {
   contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL" | "PAWN";
-
   currentPawn?: Pawn;
   startingPointColor?: Color;
   connectedTo: Position[];
@@ -10,12 +9,7 @@ export type Spot = {
   goalDistance?: number;
 };
 
-// TODO change data structure to make goal and empty implicit
-
 type Position = { x: number; y: number };
-
-// Börja med enkelt först
-// TODO make iterable
 
 const x = { contains: "OUTSIDE", connectedTo: [] };
 const n = { contains: "NORMAL", connectedTo: [] };
@@ -102,13 +96,12 @@ const pointToString = (p) => `${p.x}-${p.y}`;
 
 export function connectField(f: Spot[][]): void {
   const startingPoint = { x: 8, y: 14 };
-  const visited: string[] = [pointToString(startingPoint)];
+  const visited: string[] = [];
   const stack: Position[] = [startingPoint];
   let currPos: Position | undefined;
 
-  // TODO gör denna mindre komplicerad. gå igenom varje med en for loop istället
-  // TODO räkna steg från
   while ((currPos = stack.shift())) {
+    debugger;
     const currSpot = access(f, currPos);
     const neighbourPos = onePosAway(f, currPos).filter(
       (p) => !visited.includes(pointToString(p))
@@ -166,12 +159,9 @@ export function oneStepAway(f, p: Position): Spot[] {
 function possibleMoves(spots: Spot[], distance: number): Spot[] {
   //const expandSpot = spot => moves.map(spot => )
   // return moves.map(({x,y}) => ).filter(p1 => visited.some(p2 => comparePosition(p1,p2))
+  // vi håller bara koll på vilka man har vart på
   return [];
 }
-
-//export function getCurrentPlayingField(): Field {
-//return playingField;
-//}
 
 let turn = 0;
 const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
@@ -186,5 +176,10 @@ function tick() {
 export function createField(): Spot[][] {
   const field = createSimpleField();
   connectField(field);
-  return field.reverse();
+  return field;
 }
+
+// TODO visa vilka connected to.
+// TODO testa moves
+
+createField();
