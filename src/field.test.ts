@@ -5,12 +5,11 @@ const YELLOW_START = { x: 0, y: 0 };
 
 test("createField", () => {
   const g = access(field, GOAL_POSITION);
-  expect(g.comesFrom.length).toEqual(1);
-  expect(access(field, g.comesFrom[0]).contains).toEqual("BARRICADE");
+  expect(g.connectedTo.length).toEqual(1);
+  expect(access(field, g.connectedTo[0]).contains).toEqual("BARRICADE");
 });
 
 test("move", () => {
   const y = access(field, YELLOW_START);
-  expect(y.comesFrom.length).toEqual(2);
-  expect(y.leadsTo.length).toEqual(2);
+  expect(y.connectedTo.length).toEqual(2);
 });

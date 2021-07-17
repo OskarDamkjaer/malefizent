@@ -4,54 +4,48 @@ export type Spot = {
   contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL" | "PAWN";
   currentPawn?: Pawn;
   startingPointColor?: Color;
-  comesFrom: Position[];
-  leadsTo: Position[];
+  connectedTo: Position[];
   unBarricadeable?: boolean;
   goalDistance?: number;
+  position: Position;
 };
 
 type Position = { x: number; y: number };
 
-const x = { contains: "OUTSIDE", leadsTo: [], comesFrom: [] };
-const n = { contains: "NORMAL", leadsTo: [], comesFrom: [] };
-const b = { contains: "BARRICADE", leadsTo: [], comesFrom: [] };
-const g = { contains: "GOAL", leadsTo: [], comesFrom: [] };
+const x = { contains: "OUTSIDE", connectedTo: [] };
+const n = { contains: "NORMAL", connectedTo: [] };
+const b = { contains: "BARRICADE", connectedTo: [] };
+const g = { contains: "GOAL", connectedTo: [] };
 const u = {
   contains: "NORMAL",
   unBarricadeable: true,
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const p = {
   contains: "PAWN",
   currentPawn: { color: "BLUE" },
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const R = {
   contains: "NORMAL",
   startingPointColor: "RED",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const G = {
   contains: "NORMAL",
   startingPointColor: "GREEN",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
   goalDistance: 0,
 };
 const Y = {
   contains: "NORMAL",
   startingPointColor: "YELLOW",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 const B = {
   contains: "NORMAL",
   startingPointColor: "BLUE",
-  leadsTo: [],
-  comesFrom: [],
+  connectedTo: [],
 };
 
 const charToObj = {
@@ -94,7 +88,11 @@ uuRuuuGuuuYuuuBuu`;
     .split("\n")
     .slice(1)
     .reverse()
-    .map((line) => line.split("").map((char) => charToObj[char]()));
+    .map((line, y) =>
+      line
+        .split("")
+        .map((char, x) => ({ ...charToObj[char](), position: { x, y } }))
+    );
 
   // 255 in total
   // 114 spots inside
@@ -118,23 +116,25 @@ export function connectField(f: Spot[][]): void {
       (p) => !visited.includes(pointToString(p))
     );
 
-    currSpot.comesFrom.push(...neighbourPos);
-
     // korsningar besöks två gånger
     if (!visited.includes(pointToString(currPos))) {
       neighbourPos
         .map((n) => access(f, n))
         .forEach((spot) => {
-          spot.leadsTo.push(currPos);
           spot.goalDistance = (currSpot.goalDistance || 0) + 1;
         });
 
       visited.push(pointToString(currPos));
       stack.push(...neighbourPos);
-    } else {
-      console.log(currPos);
     }
   }
+
+  f.forEach((row) =>
+    row.forEach((spot) => {
+      //console.log(spot.position);
+      //spot.connectedTo.push(...onePosAway(f, spot.position));
+    })
+  );
 }
 
 export function access(field, { x, y }: Position): Spot | undefined {
