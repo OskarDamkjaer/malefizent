@@ -4,47 +4,54 @@ export type Spot = {
   contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL" | "PAWN";
   currentPawn?: Pawn;
   startingPointColor?: Color;
-  connectedTo: Position[];
+  comesFrom: Position[];
+  leadsTo: Position[];
   unBarricadeable?: boolean;
   goalDistance?: number;
 };
 
 type Position = { x: number; y: number };
 
-const x = { contains: "OUTSIDE", connectedTo: [] };
-const n = { contains: "NORMAL", connectedTo: [] };
-const b = { contains: "BARRICADE", connectedTo: [] };
-const g = { contains: "GOAL", connectedTo: [] };
+const x = { contains: "OUTSIDE", leadsTo: [], comesFrom: [] };
+const n = { contains: "NORMAL", leadsTo: [], comesFrom: [] };
+const b = { contains: "BARRICADE", leadsTo: [], comesFrom: [] };
+const g = { contains: "GOAL", leadsTo: [], comesFrom: [] };
 const u = {
   contains: "NORMAL",
   unBarricadeable: true,
-  connectedTo: [],
+  leadsTo: [],
+  comesFrom: [],
 };
 const p = {
   contains: "PAWN",
   currentPawn: { color: "BLUE" },
-  connectedTo: [],
+  leadsTo: [],
+  comesFrom: [],
 };
 const R = {
   contains: "NORMAL",
   startingPointColor: "RED",
-  connectedTo: [],
+  leadsTo: [],
+  comesFrom: [],
 };
 const G = {
   contains: "NORMAL",
   startingPointColor: "GREEN",
-  connectedTo: [],
+  leadsTo: [],
+  comesFrom: [],
   goalDistance: 0,
 };
 const Y = {
   contains: "NORMAL",
   startingPointColor: "YELLOW",
-  connectedTo: [],
+  leadsTo: [],
+  comesFrom: [],
 };
 const B = {
   contains: "NORMAL",
   startingPointColor: "BLUE",
-  connectedTo: [],
+  leadsTo: [],
+  comesFrom: [],
 };
 
 const charToObj = {
@@ -83,11 +90,15 @@ uuRuuuGuuuYuuuBuu`;
   //  |
   //  |
   //  0------> x+
-  const undirected = malefitzField
+  const undirected: Spot[][] = malefitzField
     .split("\n")
     .slice(1)
     .reverse()
     .map((line) => line.split("").map((char) => charToObj[char]()));
+
+  // 255 in total
+  // 114 spots inside
+  // 142 outside
 
   return undirected;
 }
@@ -101,23 +112,28 @@ export function connectField(f: Spot[][]): void {
   let currPos: Position | undefined;
 
   while ((currPos = stack.shift())) {
-    debugger;
     const currSpot = access(f, currPos);
+
     const neighbourPos = onePosAway(f, currPos).filter(
       (p) => !visited.includes(pointToString(p))
     );
 
-    currSpot.connectedTo.push(...neighbourPos);
+    currSpot.comesFrom.push(...neighbourPos);
 
-    neighbourPos
-      .map((n) => access(f, n))
-      .forEach((spot) => {
-        spot.connectedTo.push(currPos);
-        spot.goalDistance = (currSpot.goalDistance || 0) + 1;
-      });
+    // korsningar besöks två gånger
+    if (!visited.includes(pointToString(currPos))) {
+      neighbourPos
+        .map((n) => access(f, n))
+        .forEach((spot) => {
+          spot.leadsTo.push(currPos);
+          spot.goalDistance = (currSpot.goalDistance || 0) + 1;
+        });
 
-    visited.push(pointToString(currPos));
-    stack.push(...neighbourPos);
+      visited.push(pointToString(currPos));
+      stack.push(...neighbourPos);
+    } else {
+      console.log(currPos);
+    }
   }
 }
 
@@ -181,5 +197,3 @@ export function createField(): Spot[][] {
 
 // TODO visa vilka connected to.
 // TODO testa moves
-
-createField();
