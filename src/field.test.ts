@@ -11,5 +11,5 @@ test("createField", () => {
 
 test("move", () => {
   const y = access(field, YELLOW_START);
-  expect(y.connectedTo.length).toEqual(2);
+  expect(y.connectedTo).toEqual(2);
 });

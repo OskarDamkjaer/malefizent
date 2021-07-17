@@ -1,3 +1,5 @@
+import { debug } from "svelte/internal";
+
 type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
 type Pawn = { color: Color };
 export type Spot = {
@@ -131,8 +133,12 @@ export function connectField(f: Spot[][]): void {
 
   f.forEach((row) =>
     row.forEach((spot) => {
-      //console.log(spot.position);
-      //spot.connectedTo.push(...onePosAway(f, spot.position));
+      if (spot.contains !== "OUTSIDE") {
+        if (spot.connectedTo.length === 0) {
+          // I cannot fathom why this length check would ever be needed.
+          spot.connectedTo.push(...onePosAway(f, spot.position));
+        }
+      }
     })
   );
 }
