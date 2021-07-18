@@ -1,5 +1,3 @@
-import { debug } from "svelte/internal";
-
 type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
 export type Spot = {
   contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL";
@@ -228,18 +226,18 @@ export function firstStepForColor(f: Spot[][], color: Color): Position {
 }
 
 function roll() {
-  return Math.floor(Math.random() * 6);
+  return Math.floor(Math.random() * 6) + 1;
 }
 
 const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
-type Pawn = {
+export type Pawn = {
   color: Color;
   number: number;
   position: Position | null; // if not on board is missing
   name?: string; // for later
 };
 const createFivePawns = (color: Color) =>
-  Array.from({ length: 6 }, (_, i) => ({
+  Array.from({ length: 5 }, (_, i) => ({
     number: i + 1,
     color,
     position: null,
@@ -277,7 +275,8 @@ export function prepareTurn(state: GameState): MoveOptions {
 
   return moves;
 }
-function posContainsPawn(state: GameState, pos: Position): Pawn | null {
+
+export function posContainsPawn(state: GameState, pos: Position): Pawn | null {
   const allPawns = Object.values(state.pawns).reduce(flatten, []);
 
   return allPawns.find((pawn) => isSamePosition(pawn.position, pos)) || null;
@@ -394,12 +393,12 @@ function movePawn(
   pawnNumber: number,
   to: Position
 ): Pawns {
-  const currPawn = pawns[color][pawnNumber];
+  const currPawn = pawns[color][pawnNumber - 1];
+  const copiedPawns = pawns[color].slice();
 
-  return {
-    ...pawns,
-    [color]: { ...pawns[color], [pawnNumber]: { ...currPawn, position: to } },
-  };
+  copiedPawns[pawnNumber - 1] = { ...currPawn, position: to };
+
+  return { ...pawns, [color]: copiedPawns };
 }
 
 export function createField(): Spot[][] {
