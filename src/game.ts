@@ -288,7 +288,8 @@ type ChosenTurn = {
   move: Position;
   newBarricadePosition?: Position;
 };
-function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
+
+export function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
   const { field, turn, pawns, winner } = state;
   if (winner) {
     return state;
@@ -364,20 +365,27 @@ function moveBarricade(
   const newBarSpot = access(f, newBarPosition);
   const barricaded: Spot = { ...newBarSpot, contains: "BARRICADE" };
 
-  return updateField(f, [
+  return updateFieldSpots(f, [
     { pos: from, newSpot: emptyBarricade },
     { pos: newBarPosition, newSpot: barricaded },
   ]);
 }
 
-function updateField(
+function updateFieldSpots(
   f: Spot[][],
   updates: {
     pos: Position;
     newSpot: Spot;
   }[]
 ): Spot[][] {
-  return f;
+  const copy = f.map((row) => [...row]);
+
+  updates.forEach(({ pos, newSpot }) => {
+    const { x, y } = pos;
+    copy[y][x] = newSpot;
+  });
+
+  return copy;
 }
 
 function movePawn(
