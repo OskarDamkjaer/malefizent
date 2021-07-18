@@ -302,6 +302,7 @@ export function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
   );
   if (!isLegalMove) {
     // skip turn
+    // TODO this should do random turn as players are not allowed to skip turns
     return { field, pawns, turn: turn + 1, diceRoll: roll() };
   }
 
