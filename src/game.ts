@@ -2,8 +2,7 @@ import { debug } from "svelte/internal";
 
 type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
 export type Spot = {
-  contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL" | "PAWN";
-  currentPawn?: Pawn;
+  contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL";
   startingPointColor?: Color;
   connectedTo: Position[];
   unBarricadeable?: boolean;
@@ -146,7 +145,11 @@ export function access(field, { x, y }: Position): Spot | undefined {
   return (field[y] && field[y][x]) || { contains: "OUTSIDE" };
 }
 
-function comparePosition(p1: Position, p2: Position) {
+function isSamePosition(p1: Position, p2: Position) {
+  if (!p1) {
+    return false;
+  }
+
   return p1.x === p2.x && p1.y === p2.y;
 }
 
@@ -179,22 +182,14 @@ function flatten<T>(acc: T[], curr: T[]): T[] {
   return acc.concat(curr);
 }
 
-function possibleMoves(f: Spot[][], player: Color, roll: number): Position[] {
-  // hantera fallet där de inte har alla pawns ute.
-  // i sånna fall skicka ut en ett steg
-  // hur vet man vilken pawn som flyttar sig
-  return pawns[player]
-    .map((pawn) => innerFindPaths(f, pawn.position, [], roll, player))
-    .reduce(flatten, []);
-}
-
 export function innerFindPaths(
-  f: Spot[][],
+  state: GameState,
   curr: Position | null,
   baseVisited: Position[],
   stepsLeft: number,
   currColor: Color
 ): Position[] {
+  const { field: f } = state;
   if (stepsLeft === 0) {
     if (!curr) {
       throw new Error("can't leave base on 0 steps");
@@ -216,13 +211,13 @@ export function innerFindPaths(
     return !isBarricade || lastStep;
   });
   const cantStopOnSelf = cantPass.filter((p) => {
-    const isSelf = access(f, p).currentPawn?.color === currColor;
+    const isSelf = posContainsPawn(state, p)?.color === currColor;
     const lastStep = stepsLeft === 1;
     return !(isSelf && lastStep);
   });
 
   return cantStopOnSelf
-    .map((p) => innerFindPaths(f, p, visited, stepsLeft - 1, currColor))
+    .map((p) => innerFindPaths(state, p, visited, stepsLeft - 1, currColor))
     .reduce(flatten, []);
 }
 
@@ -250,25 +245,24 @@ const createFivePawns = (color: Color) =>
     position: null,
   }));
 
-const pawns = players.reduce(
-  (acc, curr) => ({ ...acc, [curr]: createFivePawns(curr) }),
-  {}
-) as Record<Color, Pawn[]>;
+type Pawns = Record<Color, Pawn[]>;
+type GameState = {
+  field: Spot[][];
+  turn: number;
+  pawns: Pawns;
+  diceRoll: number;
+  winner?: Color;
+};
+type MoveOptions = { player: Color; moves: Record<number, Position[]> };
 
-type GameState = { field: Spot[][]; turn: number };
-type MoveOptions = { player: Color; moves: Record<number, Position> };
-type ChosenTurn = { player: Color; pawnNumber: number; moveIndex: number };
-
-export function prepareTurn(
-  { field, turn }: GameState,
-  diceRoll: number = roll()
-): MoveOptions {
-  const player = players[turn % 4];
+export function prepareTurn(state: GameState): MoveOptions {
+  const { turn, pawns, diceRoll } = state;
+  const player = currentPlayer(turn);
 
   const moves = pawns[player]
     .map((pawn) => ({
       pawnNumber: pawn.number,
-      moves: innerFindPaths(field, pawn.position, [], diceRoll, player),
+      moves: innerFindPaths(state, pawn.position, [], diceRoll, player),
     }))
     .reduce(
       (acc, curr) => ({
@@ -283,9 +277,67 @@ export function prepareTurn(
 
   return moves;
 }
+function posContainsPawn(state: GameState, pos: Position): Pawn | null {
+  const allPawns = Object.values(state.pawns).reduce(flatten, []);
 
-function doTurn({ field, turn }: GameState, move: ChosenTurn): GameState {
-  return { field, turn: turn + 1 };
+  return allPawns.find((pawn) => isSamePosition(pawn.position, pos)) || null;
+}
+
+type ChosenTurn = {
+  pawnNumber: number;
+  move: Position;
+  newBarricadePosition?: Position;
+};
+function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
+  const { field, turn, pawns, winner } = state;
+  if (winner) {
+    return state;
+  }
+
+  const player = currentPlayer(state.turn);
+
+  const legalTurns = prepareTurn(state);
+  const isLegalMove = legalTurns.moves[chosenTurn.pawnNumber].some((pos) =>
+    isSamePosition(chosenTurn.move, pos)
+  );
+  if (!isLegalMove) {
+    // skip turn
+    return { field, pawns, turn: turn + 1, diceRoll: roll() };
+  }
+  const chosenSpot = access(field, chosenTurn.move);
+  const won = chosenSpot.contains === "GOAL";
+
+  const shouldMoveBarricade = chosenSpot.contains === "BARRICADE";
+
+  const hitPawn = posContainsPawn(state, chosenTurn.move);
+
+  // move pawn and field
+
+  const newField = {};
+  const newPawns = {};
+  // if barricade was moved and new barricade pos was missing. randomize
+
+  if (won) {
+    // TODO also move the pawn for UI clarity
+    // TODO DON't keep pawns and barricades in the field..
+    return { ...state, winner: player };
+  }
+
+  return { field: field, turn: turn + 1, pawns: pawns, diceRoll: roll() };
+}
+
+function movePawn(
+  pawns: Pawns,
+  color: Color,
+  pawnNumber: number,
+  to: Position
+): Pawns {
+  const currPawn = pawns[color][pawnNumber];
+
+  return {
+    ...pawns,
+    [color]: { ...pawns[color], [pawnNumber]: { ...currPawn, position: to } },
+  };
 }
 
 export function createField(): Spot[][] {
@@ -294,5 +346,18 @@ export function createField(): Spot[][] {
   return field;
 }
 
-// TODO visa vilka connected to.
-// TODO testa moves
+function currentPlayer(turn: number): Color {
+  return players[turn % 4];
+}
+
+export function createGameState(seed?: number): GameState {
+  return {
+    field: createField(),
+    turn: 0,
+    diceRoll: seed === undefined ? roll() : seed,
+    pawns: players.reduce(
+      (acc, curr) => ({ ...acc, [curr]: createFivePawns(curr) }),
+      {}
+    ) as Record<Color, Pawn[]>,
+  };
+}

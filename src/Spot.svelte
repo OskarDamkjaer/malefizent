@@ -12,8 +12,6 @@
     B
   {:else if contains === "GOAL"}
     G
-  {:else if contains === "PAWN"}
-    <div style={`color: ${spot.currentPawn.color}`}>O</div>
   {/if}
 </div>
 
