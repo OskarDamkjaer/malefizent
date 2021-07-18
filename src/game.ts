@@ -304,26 +304,80 @@ function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
     // skip turn
     return { field, pawns, turn: turn + 1, diceRoll: roll() };
   }
+
   const chosenSpot = access(field, chosenTurn.move);
   const won = chosenSpot.contains === "GOAL";
 
-  const shouldMoveBarricade = chosenSpot.contains === "BARRICADE";
-
   const hitPawn = posContainsPawn(state, chosenTurn.move);
+  const afterFirstMove = movePawn(
+    pawns,
+    player,
+    chosenTurn.pawnNumber,
+    chosenTurn.move
+  );
+  const newPawns = hitPawn
+    ? movePawn(afterFirstMove, hitPawn.color, hitPawn.number, null)
+    : afterFirstMove;
 
-  // move pawn and field
+  const shouldMoveBarricade = chosenSpot.contains === "BARRICADE";
+  const newField = shouldMoveBarricade
+    ? moveBarricade(state, chosenTurn.move, chosenTurn.newBarricadePosition)
+    : field;
 
-  const newField = {};
-  const newPawns = {};
   // if barricade was moved and new barricade pos was missing. randomize
 
-  if (won) {
-    // TODO also move the pawn for UI clarity
-    // TODO DON't keep pawns and barricades in the field..
-    return { ...state, winner: player };
-  }
+  return {
+    field: newField,
+    turn: turn + 1,
+    pawns: newPawns,
+    diceRoll: roll(),
+    winner: won ? player : undefined,
+  };
+}
 
-  return { field: field, turn: turn + 1, pawns: pawns, diceRoll: roll() };
+export function legalBarricadeSpots(state: GameState): Position[] {
+  return state.field
+    .reduce(flatten, [])
+    .filter((spot) => spot.contains === "NORMAL")
+    .filter((spot) => !spot.unBarricadeable)
+    .filter((spot) => !posContainsPawn(state, spot.position))
+    .map((spot) => spot.position);
+}
+
+function moveBarricade(
+  state: GameState,
+  from: Position,
+  to?: Position
+): Spot[][] {
+  const { field: f } = state;
+  const oldBarrSpot = access(f, from);
+  const emptyBarricade: Spot = { ...oldBarrSpot, contains: "NORMAL" };
+
+  const legalBarrSpots = legalBarricadeSpots(state);
+  const choseLegalSpot =
+    to && legalBarrSpots.some((spot) => isSamePosition(spot, to));
+
+  // if illegal spot randomize
+  const newBarPosition: Position = choseLegalSpot
+    ? to
+    : legalBarrSpots[Math.floor(Math.random() * legalBarrSpots.length)];
+  const newBarSpot = access(f, newBarPosition);
+  const barricaded: Spot = { ...newBarSpot, contains: "BARRICADE" };
+
+  return updateField(f, [
+    { pos: from, newSpot: emptyBarricade },
+    { pos: newBarPosition, newSpot: barricaded },
+  ]);
+}
+
+function updateField(
+  f: Spot[][],
+  updates: {
+    pos: Position;
+    newSpot: Spot;
+  }[]
+): Spot[][] {
+  return f;
 }
 
 function movePawn(
