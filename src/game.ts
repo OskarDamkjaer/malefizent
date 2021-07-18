@@ -236,7 +236,6 @@ function roll() {
   return Math.floor(Math.random() * 6);
 }
 
-let turn = 0;
 const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
 type Pawn = {
   color: Color;
@@ -256,10 +255,37 @@ const pawns = players.reduce(
   {}
 ) as Record<Color, Pawn[]>;
 
-function tick(field) {
+type GameState = { field: Spot[][]; turn: number };
+type MoveOptions = { player: Color; moves: Record<number, Position> };
+type ChosenTurn = { player: Color; pawnNumber: number; moveIndex: number };
+
+export function prepareTurn(
+  { field, turn }: GameState,
+  diceRoll: number = roll()
+): MoveOptions {
   const player = players[turn % 4];
-  turn += 1;
-  return [player, possibleMoves(field, player, roll())];
+
+  const moves = pawns[player]
+    .map((pawn) => ({
+      pawnNumber: pawn.number,
+      moves: innerFindPaths(field, pawn.position, [], diceRoll, player),
+    }))
+    .reduce(
+      (acc, curr) => ({
+        ...acc,
+        moves: { ...acc.moves, [curr.pawnNumber]: curr.moves },
+      }),
+      {
+        player,
+        moves: [],
+      }
+    );
+
+  return moves;
+}
+
+function doTurn({ field, turn }: GameState, move: ChosenTurn): GameState {
+  return { field, turn: turn + 1 };
 }
 
 export function createField(): Spot[][] {
