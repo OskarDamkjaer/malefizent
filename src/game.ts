@@ -1,7 +1,6 @@
 import { debug } from "svelte/internal";
 
 type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
-type Pawn = { color: Color };
 export type Spot = {
   contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL" | "PAWN";
   currentPawn?: Pawn;
@@ -180,41 +179,34 @@ function flatten<T>(acc: T[], curr: T[]): T[] {
   return acc.concat(curr);
 }
 
-function possibleMoves(f: Spot[][], player: Color, roll: number): Spot[] {
+function possibleMoves(f: Spot[][], player: Color, roll: number): Position[] {
   // hantera fallet där de inte har alla pawns ute.
   // i sånna fall skicka ut en ett steg
+  // hur vet man vilken pawn som flyttar sig
   return pawns[player]
-    .map((pos) => findPaths(f, pos, roll))
+    .map((pawn) => innerFindPaths(f, pawn.position, [], roll, player))
     .reduce(flatten, []);
-}
-
-export function findPaths(
-  f: Spot[][],
-  position: Position,
-  roll: number
-): Spot[] {
-  const spot = access(f, position);
-  const currColor = spot.currentPawn!.color;
-  let paths = [];
-  // vi håller bara koll på vilka man har vart på
-  //en path är bara en lista av index vi drar från connected to
-
-  // disallow ending on same as ccurrent
-  return paths;
 }
 
 export function innerFindPaths(
   f: Spot[][],
-  curr: Position,
+  curr: Position | null,
   baseVisited: Position[],
-  stepsLeft: number
+  stepsLeft: number,
+  currColor: Color
 ): Position[] {
   if (stepsLeft === 0) {
+    if (!curr) {
+      throw new Error("can't leave base on 0 steps");
+    }
     return [curr];
   }
-  const visited = [...baseVisited, curr];
 
-  const all = onePosAway(f, curr);
+  const visited = curr ? [...baseVisited, curr] : baseVisited;
+
+  // if no position yet only step possible first step is move out
+  const all = curr ? onePosAway(f, curr) : [firstStepForColor(f, currColor)];
+
   const notVisited = all.filter(
     (p) => !visited.find((v) => v.x === p.x && v.y === p.y)
   );
@@ -223,10 +215,21 @@ export function innerFindPaths(
     const lastStep = stepsLeft === 1;
     return !isBarricade || lastStep;
   });
+  const cantStopOnSelf = cantPass.filter((p) => {
+    const isSelf = access(f, p).currentPawn?.color === currColor;
+    const lastStep = stepsLeft === 1;
+    return !(isSelf && lastStep);
+  });
 
-  return cantPass
-    .map((p) => innerFindPaths(f, p, visited, stepsLeft - 1))
+  return cantStopOnSelf
+    .map((p) => innerFindPaths(f, p, visited, stepsLeft - 1, currColor))
     .reduce(flatten, []);
+}
+
+export function firstStepForColor(f: Spot[][], color: Color): Position {
+  return f
+    .reduce(flatten, [])
+    .find((spot) => spot.startingPointColor === color)!.position;
 }
 
 function roll() {
@@ -235,13 +238,23 @@ function roll() {
 
 let turn = 0;
 const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
-
-const pawns: Record<Color, Position[]> = {
-  YELLOW: [],
-  RED: [],
-  GREEN: [],
-  BLUE: [],
+type Pawn = {
+  color: Color;
+  number: number;
+  position: Position | null; // if not on board is missing
+  name?: string; // for later
 };
+const createFivePawns = (color: Color) =>
+  Array.from({ length: 6 }, (_, i) => ({
+    number: i + 1,
+    color,
+    position: null,
+  }));
+
+const pawns = players.reduce(
+  (acc, curr) => ({ ...acc, [curr]: createFivePawns(curr) }),
+  {}
+) as Record<Color, Pawn[]>;
 
 function tick(field) {
   const player = players[turn % 4];
