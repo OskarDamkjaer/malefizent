@@ -147,8 +147,6 @@ export function access(field, { x, y }: Position): Spot | undefined {
   return (field[y] && field[y][x]) || { contains: "OUTSIDE" };
 }
 
-function availableMoves(roll: number, player: Color) {}
-
 function comparePosition(p1: Position, p2: Position) {
   return p1.x === p2.x && p1.y === p2.y;
 }
@@ -178,21 +176,77 @@ export function oneStepAway(f, p: Position): Spot[] {
   return onePosAway(f, p).map((p1) => access(f, p1));
 }
 
-function possibleMoves(spots: Spot[], distance: number): Spot[] {
-  //const expandSpot = spot => moves.map(spot => )
-  // return moves.map(({x,y}) => ).filter(p1 => visited.some(p2 => comparePosition(p1,p2))
+function flatten<T>(acc: T[], curr: T[]): T[] {
+  return acc.concat(curr);
+}
+
+function possibleMoves(f: Spot[][], player: Color, roll: number): Spot[] {
+  // hantera fallet där de inte har alla pawns ute.
+  // i sånna fall skicka ut en ett steg
+  return pawns[player]
+    .map((pos) => findPaths(f, pos, roll))
+    .reduce(flatten, []);
+}
+
+export function findPaths(
+  f: Spot[][],
+  position: Position,
+  roll: number
+): Spot[] {
+  const spot = access(f, position);
+  const currColor = spot.currentPawn!.color;
+  let paths = [];
   // vi håller bara koll på vilka man har vart på
-  return [];
+  //en path är bara en lista av index vi drar från connected to
+
+  // disallow ending on same as ccurrent
+  return paths;
+}
+
+export function innerFindPaths(
+  f: Spot[][],
+  curr: Position,
+  baseVisited: Position[],
+  stepsLeft: number
+): Position[] {
+  if (stepsLeft === 0) {
+    return [curr];
+  }
+  const visited = [...baseVisited, curr];
+
+  const all = onePosAway(f, curr);
+  const notVisited = all.filter(
+    (p) => !visited.find((v) => v.x === p.x && v.y === p.y)
+  );
+  const cantPass = notVisited.filter((p) => {
+    const isBarricade = access(f, p).contains === "BARRICADE";
+    const lastStep = stepsLeft === 1;
+    return !isBarricade || lastStep;
+  });
+
+  return cantPass
+    .map((p) => innerFindPaths(f, p, visited, stepsLeft - 1))
+    .reduce(flatten, []);
+}
+
+function roll() {
+  return Math.floor(Math.random() * 6);
 }
 
 let turn = 0;
 const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
 
-function tick() {
+const pawns: Record<Color, Position[]> = {
+  YELLOW: [],
+  RED: [],
+  GREEN: [],
+  BLUE: [],
+};
+
+function tick(field) {
   const player = players[turn % 4];
   turn += 1;
-  const roll = Math.floor(Math.random() * 6);
-  return [player, availableMoves(roll, player)];
+  return [player, possibleMoves(field, player, roll())];
 }
 
 export function createField(): Spot[][] {
