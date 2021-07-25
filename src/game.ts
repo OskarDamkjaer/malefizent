@@ -300,8 +300,9 @@ export function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
   const isLegalMove = legalTurns.moves[chosenTurn.pawnNumber].some((pos) =>
     isSamePosition(chosenTurn.move, pos)
   );
+
   if (!isLegalMove) {
-    // skip turn
+    // skip turn, take random turn
     // TODO this should do random turn as players are not allowed to skip turns
     return { field, pawns, turn: turn + 1, diceRoll: roll() };
   }
@@ -343,6 +344,17 @@ export function legalBarricadeSpots(state: GameState): Position[] {
     .filter((spot) => !spot.unBarricadeable)
     .filter((spot) => !posContainsPawn(state, spot.position))
     .map((spot) => spot.position);
+}
+
+export function nonEmptySpots(state: GameState): Spot[] {
+  return state.field
+    .reduce(flatten, [])
+    .filter(
+      (spot) =>
+        spot.contains === "BARRICADE" ||
+        spot.contains === "GOAL" ||
+        posContainsPawn(state, spot.position)
+    );
 }
 
 function moveBarricade(
