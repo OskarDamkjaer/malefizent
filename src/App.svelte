@@ -5,6 +5,7 @@
     posContainsPawn,
     getNextTurnOptions,
   } from "./game";
+
   import Spot from "./Spot.svelte";
   let state = createGameState();
   $: possibleTurns = getNextTurnOptions(state);
@@ -28,10 +29,30 @@
       clearInterval(interval);
     }
   }, 100);
-  // TODO byt namn på spelet och designa så den ser fin ut. kanske att pjäserna rör sig?
+  clearInterval(interval);
+  let code = `
+  // write your bot here. you have access to a global variable called moveOptions
+  // it contains possible turns you could do
+  // and access to a 
+  console.log(moveOptions[0])
+  console.log(moveOptions[0])
+  console.log(12)
+  console.log(2)
+  return moveOptions[0]
+  `;
+
+  $: runnable = eval(`() => {
+    document.getElementById("console").innerHTML = "";
+    console.log = (m) => document.getElementById("console").innerHTML += JSON.stringify(m)+ "<br>";
+    const moveOptions = ${JSON.stringify(possibleTurns.options)};
+  ${code}
+}`);
 </script>
 
 <main>
+  <textarea bind:value={code} />
+  <div id="console" />
+  <button on:click={runnable}> RUN </button>
   {#each state.field.slice().reverse() as row}
     <div class="row">
       {#each row as spot}

@@ -252,7 +252,7 @@ type GameState = {
   winner?: Color;
 };
 type MoveOptions = { player: Color; moves: Record<number, Position[]> };
-type TurnOptions = {
+export type TurnOptions = {
   player: Color;
   options: Turn[];
 };
@@ -302,6 +302,9 @@ export function posContainsPawn(state: GameState, pos: Position): Pawn | null {
   return allPawns.find((pawn) => isSamePosition(pawn.position, pos)) || null;
 }
 
+interface Bot {
+  doMove(options: Turn[]): Turn;
+}
 type Turn = {
   pawnNumber: number;
   spot: Spot;
