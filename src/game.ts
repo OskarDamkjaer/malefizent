@@ -252,6 +252,10 @@ type GameState = {
   winner?: Color;
 };
 type MoveOptions = { player: Color; moves: Record<number, Position[]> };
+type TurnOptions = {
+  player: Color;
+  options: Turn[];
+};
 
 export function prepareTurn(state: GameState): MoveOptions {
   const { turn, pawns, diceRoll } = state;
@@ -276,19 +280,38 @@ export function prepareTurn(state: GameState): MoveOptions {
   return moves;
 }
 
+export function getNextTurnOptions(state: GameState): TurnOptions {
+  const { turn, pawns, diceRoll } = state;
+  const player = currentPlayer(turn);
+
+  const options = pawns[player]
+    .map((pawn) =>
+      innerFindPaths(state, pawn.position, [], diceRoll, player).map((pos) => ({
+        pawnNumber: pawn.number,
+        spot: access(state.field, pos),
+      }))
+    )
+    .reduce(flatten);
+
+  return { player, options };
+}
+
 export function posContainsPawn(state: GameState, pos: Position): Pawn | null {
   const allPawns = Object.values(state.pawns).reduce(flatten, []);
 
   return allPawns.find((pawn) => isSamePosition(pawn.position, pos)) || null;
 }
 
-type ChosenTurn = {
+type Turn = {
   pawnNumber: number;
-  move: Position;
+  spot: Spot;
   newBarricadePosition?: Position;
 };
+function randomInList<T>(list: T[]) {
+  return list[Math.floor(Math.random() * list.length)];
+}
 
-export function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
+export function doTurn(state: GameState, chosenTurn: Turn): GameState {
   const { field, turn, pawns, winner } = state;
   if (winner) {
     return state;
@@ -296,34 +319,38 @@ export function doTurn(state: GameState, chosenTurn: ChosenTurn): GameState {
 
   const player = currentPlayer(state.turn);
 
-  const legalTurns = prepareTurn(state);
-  const isLegalMove = legalTurns.moves[chosenTurn.pawnNumber].some((pos) =>
-    isSamePosition(chosenTurn.move, pos)
+  const legalTurns = getNextTurnOptions(state);
+  const isLegalMove = legalTurns.options.some(
+    ({ pawnNumber, spot }) =>
+      pawnNumber === chosenTurn.pawnNumber &&
+      isSamePosition(chosenTurn.spot.position, spot.position)
   );
 
-  if (!isLegalMove) {
-    // skip turn, take random turn
-    // TODO this should do random turn as players are not allowed to skip turns
-    return { field, pawns, turn: turn + 1, diceRoll: roll() };
-  }
+  const actualMove = isLegalMove
+    ? chosenTurn
+    : randomInList(legalTurns.options);
 
-  const chosenSpot = access(field, chosenTurn.move);
-  const won = chosenSpot.contains === "GOAL";
+  const won = actualMove.spot.contains === "GOAL";
 
-  const hitPawn = posContainsPawn(state, chosenTurn.move);
+  const hitPawn = posContainsPawn(state, actualMove.spot.position);
   const afterFirstMove = movePawn(
     pawns,
     player,
-    chosenTurn.pawnNumber,
-    chosenTurn.move
+    actualMove.pawnNumber,
+    actualMove.spot.position
   );
+
   const newPawns = hitPawn
     ? movePawn(afterFirstMove, hitPawn.color, hitPawn.number, null)
     : afterFirstMove;
 
-  const shouldMoveBarricade = chosenSpot.contains === "BARRICADE";
+  const shouldMoveBarricade = actualMove.spot.contains === "BARRICADE";
   const newField = shouldMoveBarricade
-    ? moveBarricade(state, chosenTurn.move, chosenTurn.newBarricadePosition)
+    ? moveBarricade(
+        state,
+        actualMove.spot.position,
+        actualMove.newBarricadePosition
+      )
     : field;
 
   // if barricade was moved and new barricade pos was missing. randomize
@@ -373,7 +400,7 @@ function moveBarricade(
   // if illegal spot randomize
   const newBarPosition: Position = choseLegalSpot
     ? to
-    : legalBarrSpots[Math.floor(Math.random() * legalBarrSpots.length)];
+    : randomInList(legalBarrSpots);
   const newBarSpot = access(f, newBarPosition);
   const barricaded: Spot = { ...newBarSpot, contains: "BARRICADE" };
 

@@ -3,41 +3,32 @@
     createGameState,
     doTurn,
     posContainsPawn,
-    prepareTurn,
-    access,
+    getNextTurnOptions,
   } from "./game";
   import Spot from "./Spot.svelte";
   let state = createGameState();
-  $: possibleTurns = prepareTurn(state);
+  $: possibleTurns = getNextTurnOptions(state);
 
   $: console.log(state);
   $: console.log(possibleTurns);
-  // TODO change so we don't need to flatmap like this. and also give more info on SPOts by default
-  // todo make so that people don't need to use
-  // TODO byt namn på spelet och designa så den ser fin ut. kanske att ojäserna rör sig?
   const interval = setInterval(() => {
-    const moves = [1, 2, 3, 4, 5].flatMap((nbr) =>
-      possibleTurns.moves[nbr].map((pos) => ({ pawnNumber: nbr, move: pos }))
-    );
-
-    const bestMove = moves.sort((a, b) => {
-      return (
-        access(state.field, a.move).goalDistance -
-        access(state.field, b.move).goalDistance
-      );
-    });
+    const moves = possibleTurns.options;
+    const bestMove = moves.sort(
+      (a, b) => a.spot.goalDistance - b.spot.goalDistance
+    )[0];
 
     const random = moves[Math.floor(Math.random() * moves.length)];
 
     if (possibleTurns.player === "BLUE") {
-      state = doTurn(state, bestMove[0]);
+      state = doTurn(state, bestMove);
     } else {
-      state = doTurn(state, random[0]);
+      state = doTurn(state, random);
     }
     if (state.winner) {
       clearInterval(interval);
     }
   }, 100);
+  // TODO byt namn på spelet och designa så den ser fin ut. kanske att pjäserna rör sig?
 </script>
 
 <main>
@@ -53,18 +44,16 @@
   {/if}
   <div>Player: {possibleTurns.player}</div>
   <div>Roll: {state.diceRoll}</div>
-  {#each [1, 2, 3, 4, 5] as pawnNbr}
-    pawn {pawnNbr}:
-    {#each possibleTurns.moves[pawnNbr] as pos}
-      <button
-        class="row"
-        on:click={() => {
-          state = doTurn(state, { move: pos, pawnNumber: pawnNbr });
-        }}
-      >
-        x:{pos.x} - y:{pos.y}
-      </button>
-    {/each}
+  pawn {possibleTurns.player}:
+  {#each possibleTurns.options as turn}
+    <button
+      class="row"
+      on:click={() => {
+        state = doTurn(state, turn);
+      }}
+    >
+      x:{turn.spot.position.x} - y:{turn.spot.position.y}
+    </button>
   {/each}
 </main>
 

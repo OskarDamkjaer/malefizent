@@ -1,4 +1,4 @@
-import { createGameState, prepareTurn, doTurn } from "./game";
+import { createGameState, prepareTurn, access, doTurn } from "./game";
 const state = createGameState(1);
 
 test("prepareTurn - first turn", () => {
@@ -30,7 +30,7 @@ test("do Turn - first turn", () => {
   expect(state.turn === 0);
   const newState = doTurn(state, {
     pawnNumber: 1,
-    move: { x: 4, y: 2 },
+    spot: access(state.field, { x: 4, y: 2 }),
     newBarricadePosition: { x: 5, y: 2 },
   });
   expect(newState.turn === 1);
