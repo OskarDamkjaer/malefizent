@@ -10,3 +10,7 @@ Full of inefficient code and datastructures
 ### TODO
 
 TODO byt namn på spelet och designa så den ser fin ut. kanske att pjäserna rör sig?
+Välj bottar att spela mot. välj att skicka in bot när man är nöjd
+
+vred för turnspeed
+spela med UIt

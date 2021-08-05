@@ -8,7 +8,36 @@ export type Spot = {
   position: Position;
 };
 
-type Position = { x: number; y: number };
+export type Position = { x: number; y: number };
+type Move = "UP" | "DOWN" | "LEFT" | "RIGHT";
+export type Pawn = {
+  color: Color;
+  number: number;
+  position: Position | null; // if not on board is missing
+  name?: string; // for later
+};
+type Pawns = Record<Color, Pawn[]>;
+
+export type GameState = {
+  // Should probably hold barricades as well
+  field: Spot[][];
+  turn: number;
+  pawns: Pawns;
+  diceRoll: number;
+  winner?: Color;
+};
+type MoveOptions = { player: Color; moves: Record<number, Position[]> };
+export type TurnOptions = {
+  player: Color;
+  options: Turn[];
+};
+export type Bot = { doMove: (options: Turn[], field: Spot[]) => Turn };
+
+export type Turn = {
+  pawn: Pawn;
+  spot: Spot;
+  newBarricadePosition?: Position;
+};
 
 const x = { contains: "OUTSIDE", connectedTo: [] };
 const n = { contains: "NORMAL", connectedTo: [] };
@@ -152,7 +181,6 @@ function isSamePosition(p1: Position, p2: Position) {
 }
 
 const moves: Move[] = ["UP", "DOWN", "LEFT", "RIGHT"];
-type Move = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
 export function onePosAway(f, p: Position): Position[] {
   if (access(f, p).contains === "OUTSIDE") return [];
@@ -230,32 +258,13 @@ function roll() {
 }
 
 const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
-export type Pawn = {
-  color: Color;
-  number: number;
-  position: Position | null; // if not on board is missing
-  name?: string; // for later
-};
+
 const createFivePawns = (color: Color) =>
   Array.from({ length: 5 }, (_, i) => ({
     number: i + 1,
     color,
     position: null,
   }));
-
-type Pawns = Record<Color, Pawn[]>;
-type GameState = {
-  field: Spot[][];
-  turn: number;
-  pawns: Pawns;
-  diceRoll: number;
-  winner?: Color;
-};
-type MoveOptions = { player: Color; moves: Record<number, Position[]> };
-export type TurnOptions = {
-  player: Color;
-  options: Turn[];
-};
 
 export function prepareTurn(state: GameState): MoveOptions {
   const { turn, pawns, diceRoll } = state;
@@ -287,11 +296,11 @@ export function getNextTurnOptions(state: GameState): TurnOptions {
   const options = pawns[player]
     .map((pawn) =>
       innerFindPaths(state, pawn.position, [], diceRoll, player).map((pos) => ({
-        pawnNumber: pawn.number,
+        pawn,
         spot: access(state.field, pos),
       }))
     )
-    .reduce(flatten);
+    .reduce(flatten, []);
 
   return { player, options };
 }
@@ -302,16 +311,17 @@ export function posContainsPawn(state: GameState, pos: Position): Pawn | null {
   return allPawns.find((pawn) => isSamePosition(pawn.position, pos)) || null;
 }
 
-interface Bot {
-  doMove(options: Turn[]): Turn;
-}
-type Turn = {
-  pawnNumber: number;
-  spot: Spot;
-  newBarricadePosition?: Position;
-};
 function randomInList<T>(list: T[]) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function isSamePawn(p1: Pawn, p2: Pawn): boolean {
+  return (
+    p1.color === p2.color &&
+    p1.name === p2.name &&
+    p1.number === p2.number &&
+    isSamePosition(p1.position, p2.position)
+  );
 }
 
 export function doTurn(state: GameState, chosenTurn: Turn): GameState {
@@ -324,8 +334,8 @@ export function doTurn(state: GameState, chosenTurn: Turn): GameState {
 
   const legalTurns = getNextTurnOptions(state);
   const isLegalMove = legalTurns.options.some(
-    ({ pawnNumber, spot }) =>
-      pawnNumber === chosenTurn.pawnNumber &&
+    ({ pawn, spot }) =>
+      isSamePawn(pawn, chosenTurn.pawn) &&
       isSamePosition(chosenTurn.spot.position, spot.position)
   );
 
@@ -339,7 +349,7 @@ export function doTurn(state: GameState, chosenTurn: Turn): GameState {
   const afterFirstMove = movePawn(
     pawns,
     player,
-    actualMove.pawnNumber,
+    actualMove.pawn.number,
     actualMove.spot.position
   );
 
@@ -374,6 +384,12 @@ export function legalBarricadeSpots(state: GameState): Position[] {
     .filter((spot) => !spot.unBarricadeable)
     .filter((spot) => !posContainsPawn(state, spot.position))
     .map((spot) => spot.position);
+}
+
+export function spotsWithBarricade(state: GameState): Spot[] {
+  return state.field
+    .reduce(flatten, [])
+    .filter((spot) => spot.contains === "BARRICADE");
 }
 
 export function nonEmptySpots(state: GameState): Spot[] {
@@ -464,4 +480,11 @@ export function createGameState(seed?: number): GameState {
       {}
     ) as Record<Color, Pawn[]>,
   };
+}
+
+export function pawnsNotFromPlayer(state: GameState, player: Color): Pawn[] {
+  return Object.entries(state.pawns)
+    .filter(([color]) => color !== player)
+    .map(([_color, pawns]) => pawns)
+    .reduce(flatten, []);
 }
