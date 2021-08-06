@@ -32,6 +32,7 @@ export type TurnOptions = {
   options: Turn[];
 };
 export type Bot = { doMove: (options: Turn[], field: Spot[]) => Turn };
+export type BotSet = [Bot, Bot, Bot, Bot];
 
 export type Turn = {
   pawn: Pawn;
@@ -204,7 +205,7 @@ export function oneStepAway(f, p: Position): Spot[] {
   return onePosAway(f, p).map((p1) => access(f, p1));
 }
 
-function flatten<T>(acc: T[], curr: T[]): T[] {
+export function flatten<T>(acc: T[], curr: T[]): T[] {
   return acc.concat(curr);
 }
 

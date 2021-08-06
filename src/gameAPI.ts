@@ -1,17 +1,17 @@
 import {
   GameState,
+  Pawn,
   Position,
   Spot,
   Turn,
   access,
   createGameState,
   doTurn,
+  flatten,
   getNextTurnOptions,
   legalBarricadeSpots,
   pawnsNotFromPlayer,
-  posContainsPawn,
   spotsWithBarricade,
-  Pawn,
 } from "./game";
 
 // This class is only to hold the game state
@@ -22,16 +22,15 @@ type PossibleTurn = {
   hasBarricade: Spot[];
   myPawns: Pawn[];
   otherPawns: Pawn[];
-  fullField: Spot[][];
+  allSpots: Spot[];
   moves: Turn[];
 };
+// Todo hade kunnat göra varje ruta så att den har en LEFT, RIGHT, FORWARD, BACK ist för leads to osv
 
-export class Game {
+export class GameAPI {
   state: GameState = createGameState();
 
-  doTurn(t: Turn): PossibleTurn {
-    // TODO double check all input here
-    this.state = doTurn(this.state, t);
+  nextTurnOptions(): PossibleTurn {
     const { player, options } = getNextTurnOptions(this.state);
 
     const myPawns = this.state.pawns[player];
@@ -48,9 +47,17 @@ export class Game {
       hasBarricade,
       canHavebarricade,
       moves: options,
-      fullField: this.state.field,
+      allSpots: this.state.field.reduce(flatten, []),
     };
-    // TODO copy
+  }
+
+  doTurn(t: Turn): PossibleTurn {
+    // TODO double check all input here
+    // TODO use this in App.ts and for all the bots.
+    // kommentera laglighet/vad som hände
+    this.state = doTurn(this.state, t);
+    // TODO deep copy or deep freeze?
+    return this.nextTurnOptions();
   }
 
   spotAtPos(position: Position) {
