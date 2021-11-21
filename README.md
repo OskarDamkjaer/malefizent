@@ -14,3 +14,6 @@ Välj bottar att spela mot. välj att skicka in bot när man är nöjd
 
 vred för turnspeed
 spela med UIt
+
+streama varje fredagslunch
+https://github.com/asvd/jailed

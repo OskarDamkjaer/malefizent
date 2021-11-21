@@ -9,9 +9,11 @@ export const FirstIsBestBot: Bot = {
   doMove: (turns) => turns[0],
 };
 
+/*
 export const PosulateBot: Bot = {
   doMove: (turns) => {
     const movesThatGoForward = turns.filter(turn => turn.);
     return;
   },
 };
+*/
