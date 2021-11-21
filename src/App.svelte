@@ -1,15 +1,9 @@
 <script lang="ts">
   import { GameAPI } from "./gameAPI";
-  import type { BotSet } from "./game";
-  import Spot from "./Spot.svelte";
-  import { RandomBot } from "./DefaultBots";
-
   // kanske ge den fyra bottar och "yielda" varje state?
 
   const game = new GameAPI();
   let nextTurn = game.nextTurnOptions();
-  const bots: BotSet = [RandomBot, RandomBot, RandomBot, RandomBot];
-  // det får bli en sandboxad iframe
 
   // Promise race
   // egen tråd
@@ -27,52 +21,60 @@
   clearInterval(interval);
   */
 
-  const code2 = "application.remote.alert('Hello from the plugin!');";
-
-  const api = {
-    alert: alert,
-  };
-  //console.log(jailed);
-  //const plugin = new jailed.DynamicPlugin(code2, api);
-
+  // todo start play manually and then later introduce bots
   // Show type of Pawn, Position, Spot, Turn
-  let code = `
-  // You have the following variables available:
-  // 
-  // moves: Turn[];
-  // myPawns: Pawn[];
-  // otherPawns: Pawn[];
-  // canHavebarricade: Spot[];
-  // hasBarricade: Spot[];
-  // allSpots: Spot[];
-  // 
-  // And you'll need to return a value of type Turn
-  // type Turn = {
-  //   pawn: Pawn;
-  //   spot: Spot;
-  //   newBarricadePosition?: Position; 
-  // };
-  // 
-  // On an invalid or missing turn, a random turn is
-  // chosen automatically
-  // 
+  let code = `/* Your job is to create a function called "doTurn" that takes 
+the following parameters:
+ turnOptions: Turn[];
+ myPawns: Pawn[];
+ otherPawns: Pawn[];
+ canHavebarricade: Spot[];
+ hasBarricade: Spot[];
+ allSpots: Spot[];
 
-  console.log(moveOptions[0])
-  console.log(moveOptions[0])
-  console.log(12)
-  console.log(2)
-  return moveOptions[0]
-  `;
+ And you need to return one of the turnOptions. If turn chosen turn
+ is invalid or your function took longer than 200ms to return, a random
+ turn is chosen instead. see the types at bottom (TODO at side is better)
+ */ 
 
-  $: runnable = eval(`() => {
-    document.getElementById("console").innerHTML = "";
-    console.log = (m) => document.getElementById("console").innerHTML += JSON.stringify(m)+ "<br>";
-    const moves = ${JSON.stringify(nextTurn.moves)};
-    const myPawns = ${JSON.stringify(nextTurn.myPawns)};
-    const otherPawns = ${JSON.stringify(nextTurn.otherPawns)};
-    const allSpots = ${JSON.stringify(nextTurn.allSpots)};
-  ${code}
-}`);
+ function doTurn(turnOptions, myPawns, otherPawns, canHaveBarricade, allSpots) {
+  console.log(turnOptions[0])
+  const randomMove = turnOptions[Math.floor(Math.random() * turnOptions.length)]
+  return randomMove;
+}
+
+/* Type reference 
+ Where the types are: 
+ type Turn = {
+  pawn: Pawn;
+  spot: Spot;
+  newBarricadePosition?: Position;
+ };
+
+ type Pawn = {
+  color: Color;
+  number: number;
+  position: Position | null; // if not on board is missing
+  name?: string; // for later
+ };
+
+ type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
+
+ type Spot = {
+  contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL";
+  startingPointColor?: Color;
+  connectedTo: Position[];
+  unBarricadeable?: boolean;
+  goalDistance?: number;
+  position: Position;
+ };
+
+ type Position = { x: number; y: number };
+ */
+`;
+
+  //document.getElementById("console").innerHTML = "";
+  //console.log = (m) => document.getElementById("console").innerHTML += JSON.stringify(m)+ "<br>";
   function executeSafely(code: string) {
     const doc = document.getElementById("codeframe");
     if (doc instanceof HTMLIFrameElement) {
@@ -93,18 +95,52 @@
     }
   }
 
+  window.onmessage = ({ data }) => {
+    // todo all kinds of errors handling . json parse can throw
+    const turn = JSON.parse(data);
+    console.log("turn", turn);
+    let nextTurn = game.doTurn(turn);
+    console.log(nextTurn);
+
+    if (game.state.winner) {
+      console.log(game.state.winner);
+    } else {
+      sendMessage(JSON.stringify(nextTurn));
+    }
+  };
+
+  // Todo: servcie workers
   setTimeout(() => {
-    executeSafely(
-      "console.log('hej');window.onmessage=(({data}) => console.log(data))"
-    );
-    sendMessage("jaman");
+    executeSafely(`
+    //todo mock these to send messages back to the main window
+    //console.log = () => {};
+    //console.error = () => {};
+    ${code}
+    window.onmessage=(({data}) => {
+      const move = doTurn(JSON.parse(data).moves)
+      window.top.postMessage(JSON.stringify(move))
+    })
+    `);
+    sendMessage(JSON.stringify(nextTurn));
   }, 1000);
+  /* 
+  what we need. 
+
+  # setup
+  person submits their code on click. 
+
+  # game 
+  we send message with options
+  they send message with picked turn
+  bots do turns 
+  repeat until somone has won
+  */
 </script>
 
 <main>
-  <textarea bind:value={code} />
+  <textarea bind:value={code} draggable="false" />
   <div id="console" />
-  <button on:click={runnable}> RUN </button>
+  <button on:click={() => {}}> RUN </button>
   <iframe title="codeframe" id="codeframe" src="about:blank" />
   <!-- // sandbox="allow-scripts" -->
   <!--
