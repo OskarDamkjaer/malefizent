@@ -1,25 +1,15 @@
 <script lang="ts">
-  import { GameAPI } from "./gameAPI";
+  import { RandomBot } from "./DefaultBots";
+  import { posContainsPawn } from "./game";
+  import { createGameState, nextTurnOptions, doTurn } from "./gameAPI";
+  import Spot from "./Spot.svelte";
+
   // kanske ge den fyra bottar och "yielda" varje state?
 
-  const game = new GameAPI();
-  let nextTurn = game.nextTurnOptions();
+  let state = createGameState();
 
   // Promise race
   // egen tråd
-  /*
-  const interval = setInterval(() => {
-    if (possibleTurns.player === "BLUE") {
-      state = doTurn(state, bestMove);
-    } else {
-      state = doTurn(state, random);
-    }
-    if (state.winner) {
-      clearInterval(interval);
-    }
-  }, 100);
-  clearInterval(interval);
-  */
 
   // todo start play manually and then later introduce bots
   // Show type of Pawn, Position, Spot, Turn
@@ -35,12 +25,18 @@ the following parameters:
  And you need to return one of the turnOptions. If turn chosen turn
  is invalid or your function took longer than 200ms to return, a random
  turn is chosen instead. see the types at bottom (TODO at side is better)
+
+ You are blue.
  */ 
 
  function doTurn(turnOptions, myPawns, otherPawns, canHaveBarricade, allSpots) {
-  console.log(turnOptions[0])
+  //console.log(turnOptions[0])
   const randomMove = turnOptions[Math.floor(Math.random() * turnOptions.length)]
-  return randomMove;
+
+  const bestMove = turnOptions.slice().sort(
+    (a, b) => b.spot.goalDistance - a.spot.goalDistance
+   )[0];
+  return bestMove;
 }
 
 /* Type reference 
@@ -98,19 +94,25 @@ the following parameters:
   window.onmessage = ({ data }) => {
     // todo all kinds of errors handling . json parse can throw
     const turn = JSON.parse(data);
-    console.log("turn", turn);
-    let nextTurn = game.doTurn(turn);
-    console.log(nextTurn);
+    //console.log("turn", turn);
+    state = doTurn(state, turn);
 
-    if (game.state.winner) {
-      console.log(game.state.winner);
+    if (state.winner) {
+      console.log(state.winner);
     } else {
-      sendMessage(JSON.stringify(nextTurn));
+      const nextTurn = nextTurnOptions(state);
+      if (nextTurn.myPawns[0].color === "BLUE") {
+        sendMessage(JSON.stringify(nextTurn));
+      } else {
+        RandomBot.doMove(nextTurn.moves, nextTurn.allSpots);
+
+        sendMessage(JSON.stringify(nextTurn));
+      }
     }
   };
 
   // Todo: servcie workers
-  setTimeout(() => {
+  const run = () => {
     executeSafely(`
     //todo mock these to send messages back to the main window
     //console.log = () => {};
@@ -121,8 +123,8 @@ the following parameters:
       window.top.postMessage(JSON.stringify(move))
     })
     `);
-    sendMessage(JSON.stringify(nextTurn));
-  }, 1000);
+    sendMessage(JSON.stringify(nextTurnOptions(state)));
+  };
   /* 
   what we need. 
 
@@ -135,15 +137,16 @@ the following parameters:
   bots do turns 
   repeat until somone has won
   */
+  // Todo store all turns so we can do replay
+  // we can keep the "gamestate" thing if we keep the turns instead"
 </script>
 
 <main>
   <textarea bind:value={code} draggable="false" />
   <div id="console" />
-  <button on:click={() => {}}> RUN </button>
+  <button on:click={run}> RUN </button>
   <iframe title="codeframe" id="codeframe" src="about:blank" />
   <!-- // sandbox="allow-scripts" -->
-  <!--
   {#each state.field.slice().reverse() as row}
     <div class="row">
       {#each row as spot}
@@ -155,7 +158,6 @@ the following parameters:
     <div>WINNER: {state.winner}</div>
   {/if}
   <div>Roll: {state.diceRoll}</div>
-  -->
   <!-- <div>Player: {possibleTurns.player}</div>
   pawn {possibleTurns.player}:
   {#each possibleTurns.options as turn}
