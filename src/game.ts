@@ -1,4 +1,4 @@
-type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
+export type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
 export type Spot = {
   contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL";
   startingPointColor?: Color;
@@ -266,7 +266,7 @@ function roll() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
+export const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
 
 const createFivePawns = (color: Color) =>
   Array.from({ length: 5 }, (_, i) => ({

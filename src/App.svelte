@@ -1,101 +1,30 @@
 <script lang="ts">
-  import { RandomBot } from "./DefaultBots";
+  import Editor from "./Editor.svelte";
   import { posContainsPawn } from "./game";
   import { createGameState, nextTurnOptions, doTurn } from "./gameAPI";
+  import { requestTurn } from "./helpers";
   import Spot from "./Spot.svelte";
-  import { EditorState, EditorView, basicSetup } from "@codemirror/basic-setup";
-  import { keymap } from "@codemirror/view";
-  import { javascript } from "@codemirror/lang-javascript";
-  import { indentWithTab } from "@codemirror/commands";
-  import { onMount } from "svelte";
 
+  import hljs from "highlight.js/lib/core";
+  import typescript from "highlight.js/lib/languages/typescript";
+  import { onMount } from "svelte";
+  import "highlight.js/styles/github.css";
+
+  onMount(() => {
+    hljs.registerLanguage("typescript", typescript);
+    hljs.highlightAll();
+  });
   // kanske ge den fyra bottar och "yielda" varje state?
 
   let state = createGameState();
-  let editor: EditorView | null = null;
+  let editor = null;
+  // TODO låta folk ha sina egna namn
 
   // Promise race
   // egen tråd
 
   // todo start play manually and then later introduce bots
   // Show type of Pawn, Position, Spot, Turn
-  let code = `/* Your job is to create a function called "doTurn" that takes 
-the following parameters:
- turnOptions: Turn[];
- myPawns: Pawn[];
- otherPawns: Pawn[];
- canHavebarricade: Spot[];
- hasBarricade: Spot[];
- allSpots: Spot[];
-
- And you need to return one of the turnOptions. If turn chosen turn
- is invalid or your function took longer than 200ms to return, a random
- turn is chosen instead. see the types at bottom (TODO at side is better)
-
- You are blue.
- */ 
-
- function doTurn(turnOptions, myPawns, otherPawns, canHaveBarricade, allSpots) {
-  //console.log(turnOptions[0])
-  const randomMove = turnOptions[Math.floor(Math.random() * turnOptions.length)]
-
-  const bestMove = turnOptions.slice().sort(
-    (a, b) => b.spot.goalDistance - a.spot.goalDistance
-   )[0];
-  return bestMove;
-}
-
-/* Type reference 
- Where the types are: 
- type Turn = {
-  pawn: Pawn;
-  spot: Spot;
-  newBarricadePosition?: Position;
- };
-
- type Pawn = {
-  color: Color;
-  number: number;
-  position: Position | null; // if not on board is missing
-  name?: string; // for later
- };
-
- type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
-
- type Spot = {
-  contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL";
-  startingPointColor?: Color;
-  connectedTo: Position[];
-  unBarricadeable?: boolean;
-  goalDistance?: number;
-  position: Position;
- };
-
- type Position = { x: number; y: number };
- */
-`;
-
-  //document.getElementById("console").innerHTML = "";
-  //console.log = (m) => document.getElementById("console").innerHTML += JSON.stringify(m)+ "<br>";
-  function executeSafely(code: string) {
-    const doc = document.getElementById("codeframe");
-    if (doc instanceof HTMLIFrameElement) {
-      const iframe = doc.contentDocument;
-      if (iframe) {
-        iframe.open();
-        iframe.write(
-          `<script>${code}</script` + ">" /*svelte compiler workaround*/
-        );
-        iframe.close();
-      }
-    }
-  }
-  function sendMessage(msg: string) {
-    const doc = document.getElementById("codeframe");
-    if (doc instanceof HTMLIFrameElement) {
-      doc.contentWindow.postMessage(msg);
-    }
-  }
 
   window.onmessage = ({ data }) => {
     // todo all kinds of errors handling . json parse can throw
@@ -107,13 +36,7 @@ the following parameters:
       console.log(state.winner);
     } else {
       const nextTurn = nextTurnOptions(state);
-      if (nextTurn.myPawns[0].color === "BLUE") {
-        sendMessage(JSON.stringify(nextTurn));
-      } else {
-        RandomBot.doMove(nextTurn);
-
-        sendMessage(JSON.stringify(nextTurn));
-      }
+      requestTurn("BLUE", nextTurn);
     }
   };
 
@@ -124,18 +47,8 @@ the following parameters:
   // also it needs to look nicer.
   // todo rita en spelplan med nåon hemsidegrej
   // börja med planen
-  const run = () => {
-    executeSafely(`
-    //todo mock these to send messages back to the main window
-    //console.log = () => {};
-    //console.error = () => {};
-    ${getCodeContents()}
-    window.onmessage=(({data}) => {
-      const move = doTurn(JSON.parse(data).moves)
-      window.top.postMessage(JSON.stringify(move))
-    })
-    `);
-    sendMessage(JSON.stringify(nextTurnOptions(state)));
+  const startGame = () => {
+    requestTurn("BLUE", nextTurnOptions(state));
   };
   /* 
   what we need. 
@@ -151,28 +64,12 @@ the following parameters:
   */
   // Todo store all turns so we can do replay
   // we can keep the "gamestate" thing if we keep the turns instead"
-
-  onMount(() => {
-    editor = new EditorView({
-      state: EditorState.create({
-        extensions: [basicSetup, keymap.of([indentWithTab]), javascript()],
-        doc: code,
-      }),
-      parent: document.getElementById("editor"),
-    });
-  });
-
-  function getCodeContents(): string {
-    return editor?.state.doc.toString() ?? "";
-  }
 </script>
 
 <main>
   <div id="console" />
-  <div id="editor" />
-  <button on:click={run}> RUN </button>
-  <iframe title="codeframe" id="codeframe" src="about:blank" />
-  <!-- // sandbox="allow-scripts" -->
+  <button on:click={startGame}>start</button>
+  <Editor player={"BLUE"} />
   {#each state.field.slice().reverse() as row}
     <div class="row">
       {#each row as spot}
@@ -181,9 +78,41 @@ the following parameters:
     </div>
   {/each}
   {#if state.winner}
-    <div>WINNER: {state.winner}</div>
+    {#if state.winner === "BLUE"}
+      <div>You (blue) win!</div>
+    {:else}
+      <div>You lost. {state.winner} won.</div>
+    {/if}
   {/if}
   <div>Roll: {state.diceRoll}</div>
+  <pre><code> 
+    {`
+    type Turn = {
+    pawn: Pawn;
+    spot: Spot;
+    newBarricadePosition?: Position;
+   };
+  
+   type Pawn = {
+    color: Color;
+    number: number;
+    position: Position | null; // if not on board is missing
+    name?: string; // for later
+   };
+  
+   type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
+  
+   type Spot = {
+    contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL";
+    startingPointColor?: Color;
+    connectedTo: Position[];
+    unBarricadeable?: boolean;
+    goalDistance?: number;
+    position: Position;
+   };
+  
+   type Position = { x: number; y: number }; `}
+  </code></pre>
   <!-- <div>Player: {possibleTurns.player}</div>
   pawn {possibleTurns.player}:
   {#each possibleTurns.options as turn}
