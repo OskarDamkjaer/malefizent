@@ -1,8 +1,7 @@
 export const firstIsBestBot = {
   name: "FirstIsBestBot",
   author: "built-in",
-  code: `
-function doTurn(data) {
+  code: `function doTurn(data) {
   return data.moves[0];
 }`,
 };
@@ -10,8 +9,7 @@ function doTurn(data) {
 export const randomBot = {
   name: "RandomBot",
   author: "built-in",
-  code: `
-function doTurn(data) {
+  code: `function doTurn(data) {
   const randomMove = data.moves[Math.floor(Math.random() * data.moves.length)]
   return randomMove;
 }`,
@@ -22,7 +20,7 @@ export const playerStarter = {
   author: "you",
   code: `
 /* Your job is to create a function called "doTurn" that a parameter of type PossibleTurn (see type ref) 
-and return an object of type Move. 
+and one of its "moves". 
 
 If turn chosen turn is invalid or your function took longer than 200ms to return, a random
  turn is chosen instead. 
@@ -35,7 +33,7 @@ function doTurn(possibleTurns) {
   //console.log(turnOptions[0])
 
   const randomMove = moves[Math.floor(Math.random() * moves.length)]
-  return bestMove;
+  return randomMove;
 }
 `,
 };

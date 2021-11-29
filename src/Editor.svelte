@@ -67,19 +67,19 @@ window.onmessage=(({data}) => {
   style="display: none"
 />
 
+<div>Players {player}</div>
+<select bind:value={selected} on:change={handleSubmit}>
+  {#each botNames as name}
+    <option value={name}>
+      {name}
+    </option>
+  {/each}
+</select>
 <span style={`display: ${expanded ? "normal" : "none"}`}>
   <!-- // sandbox="allow-scripts" -->
   <span id={playerConstants[player].editorId} />
 
   <button on:click={loadCode}> submit </button>
-
-  <select bind:value={selected} on:change={handleSubmit}>
-    {#each botNames as name}
-      <option value={name}>
-        {name}
-      </option>
-    {/each}
-  </select>
 </span>
 
 <button on:click={() => (expanded = !expanded)}>
