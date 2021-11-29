@@ -3,10 +3,16 @@
   import { posContainsPawn } from "./game";
   import { createGameState, nextTurnOptions, doTurn } from "./gameAPI";
   import Spot from "./Spot.svelte";
+  import { EditorState, EditorView, basicSetup } from "@codemirror/basic-setup";
+  import { keymap } from "@codemirror/view";
+  import { javascript } from "@codemirror/lang-javascript";
+  import { indentWithTab } from "@codemirror/commands";
+  import { onMount } from "svelte";
 
   // kanske ge den fyra bottar och "yielda" varje state?
 
   let state = createGameState();
+  let editor: EditorView | null = null;
 
   // Promise race
   // egen tråd
@@ -123,7 +129,7 @@ the following parameters:
     //todo mock these to send messages back to the main window
     //console.log = () => {};
     //console.error = () => {};
-    ${code}
+    ${getCodeContents()}
     window.onmessage=(({data}) => {
       const move = doTurn(JSON.parse(data).moves)
       window.top.postMessage(JSON.stringify(move))
@@ -145,11 +151,25 @@ the following parameters:
   */
   // Todo store all turns so we can do replay
   // we can keep the "gamestate" thing if we keep the turns instead"
+
+  onMount(() => {
+    editor = new EditorView({
+      state: EditorState.create({
+        extensions: [basicSetup, keymap.of([indentWithTab]), javascript()],
+        doc: code,
+      }),
+      parent: document.getElementById("editor"),
+    });
+  });
+
+  function getCodeContents(): string {
+    return editor?.state.doc.toString() ?? "";
+  }
 </script>
 
 <main>
-  <textarea bind:value={code} draggable="false" />
   <div id="console" />
+  <div id="editor" />
   <button on:click={run}> RUN </button>
   <iframe title="codeframe" id="codeframe" src="about:blank" />
   <!-- // sandbox="allow-scripts" -->
