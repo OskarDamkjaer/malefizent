@@ -24,6 +24,7 @@ export type GameState = {
   turn: number;
   pawns: Pawns;
   diceRoll: number;
+  players: Color[];
   winner?: Color;
 };
 type MoveOptions = { player: Color; moves: Record<number, Position[]> };
@@ -266,8 +267,6 @@ function roll() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-export const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"];
-
 const createFivePawns = (color: Color) =>
   Array.from({ length: 5 }, (_, i) => ({
     number: i + 1,
@@ -277,7 +276,7 @@ const createFivePawns = (color: Color) =>
 
 export function prepareTurn(state: GameState): MoveOptions {
   const { turn, pawns, diceRoll } = state;
-  const player = currentPlayer(turn);
+  const player = currentPlayer(state);
 
   const moves = pawns[player]
     .map((pawn) => ({
@@ -300,7 +299,7 @@ export function prepareTurn(state: GameState): MoveOptions {
 
 export function getNextTurnOptions(state: GameState): TurnOptions {
   const { turn, pawns, diceRoll } = state;
-  const player = currentPlayer(turn);
+  const player = currentPlayer(state);
 
   const options = pawns[player]
     .map((pawn) =>
@@ -339,7 +338,7 @@ export function doTurn(state: GameState, chosenTurn: Turn): GameState {
     return state;
   }
 
-  const player = currentPlayer(state.turn);
+  const player = currentPlayer(state);
 
   const legalTurns = getNextTurnOptions(state);
   const isLegalMove = legalTurns.options.some(
@@ -382,6 +381,7 @@ export function doTurn(state: GameState, chosenTurn: Turn): GameState {
     turn: turn + 1,
     pawns: newPawns,
     diceRoll: roll(),
+    players: state.players,
     winner: won ? player : undefined,
   };
 }
@@ -475,14 +475,20 @@ export function createField(): Spot[][] {
   return field;
 }
 
-function currentPlayer(turn: number): Color {
-  return players[turn % 4];
+export function currentPlayer(state: GameState): Color {
+  return state.players[state.turn % 4];
 }
 
 export function createGameState(seed?: number): GameState {
+  const players: Color[] = ["RED", "GREEN", "YELLOW", "BLUE"]
+    .map((value: Color) => ({ value, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ value }) => value);
+
   return {
     field: createField(),
     turn: 0,
+    players,
     diceRoll: seed === undefined ? roll() : seed,
     pawns: players.reduce(
       (acc, curr) => ({ ...acc, [curr]: createFivePawns(curr) }),
