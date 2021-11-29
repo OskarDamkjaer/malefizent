@@ -1,7 +1,7 @@
 <script lang="ts">
   export let player: Color;
   export let expand: boolean = false;
-  export let startCode: string = randomBotSource;
+  export let startingBot: Bot = randomBot;
   import { EditorState, EditorView, basicSetup } from "@codemirror/basic-setup";
   import { keymap } from "@codemirror/view";
   import { javascript } from "@codemirror/lang-javascript";
@@ -9,9 +9,13 @@
   import { onMount } from "svelte";
   import type { Color } from "./game";
   import { loadPlayerCode, playerConstants } from "./helpers";
-  import { killerBotSource, randomBotSource } from "./DefaultBots";
+  import { pickableBots, randomBot } from "./builtinBots";
+  type Bot = { name: string; author: string; code: string };
+
   let expanded = expand;
-  let code = startCode;
+  let code = startingBot.code;
+  let selected = startingBot.name;
+  const botNames = pickableBots.map((b) => b.name);
 
   let editor: EditorView | undefined;
 
@@ -34,14 +38,11 @@
     loadPlayerCode(
       player,
       `
-    //todo mock these to send messages back to the main window
-    //console.log = () => {};
-    //console.error = () => {};
-    ${getEditorContents() ?? code} 
-    window.onmessage=(({data}) => {
-      const move = doTurn(JSON.parse(data))
-      window.top.postMessage(JSON.stringify(move))
-    })`
+${getEditorContents() ?? code} 
+window.onmessage=(({data}) => {
+  const move = doTurn(JSON.parse(data))
+  window.top.postMessage(JSON.stringify(move))
+})`
     );
 
   function setTemplate(code: string = "foo") {
@@ -53,7 +54,10 @@
     );
     loadCode();
   }
-  // TODO ERROR CONSOLE
+
+  function handleSubmit() {
+    setTemplate(pickableBots.find((b) => b.name === selected).code);
+  }
 </script>
 
 <iframe
@@ -68,7 +72,14 @@
   <span id={playerConstants[player].editorId} />
 
   <button on:click={loadCode}> submit </button>
-  <button on:click={() => setTemplate(killerBotSource)}>reset</button>
+
+  <select bind:value={selected} on:change={handleSubmit}>
+    {#each botNames as name}
+      <option value={name}>
+        {name}
+      </option>
+    {/each}
+  </select>
 </span>
 
 <button on:click={() => (expanded = !expanded)}>

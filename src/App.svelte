@@ -9,7 +9,7 @@
   import typescript from "highlight.js/lib/languages/typescript";
   import { onMount } from "svelte";
   import "highlight.js/styles/github.css";
-  import { playerStarterSource } from "./DefaultBots";
+  import { playerStarter } from "./builtinBots";
 
   onMount(() => {
     hljs.registerLanguage("typescript", typescript);
@@ -17,17 +17,9 @@
   });
 
   let state = createGameState();
-  // TODO låta folk ha sina egna namn
-
-  // Promise race
-  // egen tråd
-
-  // Show type of Pawn, Position, Spot, Turn
 
   window.onmessage = ({ data }) => {
-    // todo all kinds of errors handling . json parse can throw
     const turn = JSON.parse(data);
-    //console.log("turn", turn);
     state = doTurn(state, turn);
 
     if (state.winner) {
@@ -38,15 +30,20 @@
     }
   };
 
+  // TODO debugging mode
+  // TODO sandbox
+  // TODO mock console log & error
+  // TODO all kinds of errors handling . json parse can throw
+  // TODO restart without refresh
+  // TODO save to localstorage on cmd+s
+  // TODO låta folk ha sina egna namn
   // TODO play manually
-  // Todo: servcie workers
-  // TODO prevent people from mutating the state directly... Hmm. JSON
-  // stringify handles this nicely I guess. Validation and error handling needed
-
+  // TODO: servcie workers
+  // TODO: enforce max time
+  // TODO: game reporting events
   // also it needs to look nicer.
-  // todo rita en spelplan med nåon hemsidegrej
-  // börja med planen
   const startGame = () => {
+    state = createGameState();
     requestTurn(currentPlayer(state), nextTurnOptions(state));
   };
 </script>
@@ -54,7 +51,7 @@
 <main>
   <div>turn number: {state.turn}</div>
   <button on:click={startGame}>start</button>
-  <Editor player="BLUE" expand startCode={playerStarterSource} />
+  <Editor player="BLUE" expand startingBot={playerStarter} />
   <Editor player="RED" />
   <Editor player="YELLOW" />
   <Editor player="GREEN" />

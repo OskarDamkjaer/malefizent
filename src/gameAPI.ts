@@ -1,9 +1,6 @@
 import {
   GameState,
-  Pawn,
   Position,
-  Spot,
-  Turn,
   access,
   flatten,
   getNextTurnOptions,
@@ -13,11 +10,6 @@ import {
   PossibleTurn,
 } from "./game";
 export { createGameState, doTurn } from "./game";
-
-// This class is only to hold the game state
-// to make the UI code more ergonomic
-
-// Todo hade kunnat göra varje ruta så att den har en LEFT, RIGHT, FORWARD, BACK ist för leads to osv
 
 export function nextTurnOptions(state: GameState): PossibleTurn {
   const { player, options } = getNextTurnOptions(state);
