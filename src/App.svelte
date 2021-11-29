@@ -74,6 +74,15 @@
   {/if}
   <pre><code> 
     {`
+export type PossibleTurn = {
+  canHavebarricade: Spot[];
+  hasBarricade: Spot[];
+  myPawns: Pawn[];
+  otherPawns: Pawn[];
+  allSpots: Spot[];
+  moves: Turn[];
+};
+
 type Turn = {
   pawn: Pawn;
   spot: Spot;

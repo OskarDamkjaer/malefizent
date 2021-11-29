@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import type { Color } from "./game";
   import { loadPlayerCode, playerConstants } from "./helpers";
-  import { playerStarter, randomBotSource } from "./DefaultBots";
+  import { killerBotSource, randomBotSource } from "./DefaultBots";
   let expanded = expand;
   let code = startCode;
 
@@ -39,7 +39,7 @@
     //console.error = () => {};
     ${getEditorContents() ?? code} 
     window.onmessage=(({data}) => {
-      const move = doTurn(JSON.parse(data).moves)
+      const move = doTurn(JSON.parse(data))
       window.top.postMessage(JSON.stringify(move))
     })`
     );
@@ -68,7 +68,7 @@
   <span id={playerConstants[player].editorId} />
 
   <button on:click={loadCode}> submit </button>
-  <button on:click={() => setTemplate(playerStarter)}>reset</button>
+  <button on:click={() => setTemplate(killerBotSource)}>reset</button>
 </span>
 
 <button on:click={() => (expanded = !expanded)}>
