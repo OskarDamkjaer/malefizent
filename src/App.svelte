@@ -104,7 +104,7 @@ the following parameters:
       if (nextTurn.myPawns[0].color === "BLUE") {
         sendMessage(JSON.stringify(nextTurn));
       } else {
-        RandomBot.doMove(nextTurn.moves, nextTurn.allSpots);
+        RandomBot.doMove(nextTurn);
 
         sendMessage(JSON.stringify(nextTurn));
       }
@@ -112,6 +112,12 @@ the following parameters:
   };
 
   // Todo: servcie workers
+  // TODO prevent people from mutating the state directly... Hmm. JSON
+  // stringify handles this nicely I guess. Validation and error handling needed
+
+  // also it needs to look nicer.
+  // todo rita en spelplan med nåon hemsidegrej
+  // börja med planen
   const run = () => {
     executeSafely(`
     //todo mock these to send messages back to the main window

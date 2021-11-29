@@ -31,7 +31,15 @@ export type TurnOptions = {
   player: Color;
   options: Turn[];
 };
-export type Bot = { doMove: (options: Turn[], field: Spot[]) => Turn };
+export type PossibleTurn = {
+  canHavebarricade: Spot[];
+  hasBarricade: Spot[];
+  myPawns: Pawn[];
+  otherPawns: Pawn[];
+  allSpots: Spot[];
+  moves: Turn[];
+};
+export type Bot = { doMove: (options: PossibleTurn) => Turn };
 export type BotSet = [Bot, Bot, Bot, Bot];
 
 export type Turn = {

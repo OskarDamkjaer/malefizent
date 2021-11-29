@@ -10,20 +10,13 @@ import {
   legalBarricadeSpots,
   pawnsNotFromPlayer,
   spotsWithBarricade,
+  PossibleTurn,
 } from "./game";
 export { createGameState, doTurn } from "./game";
 
 // This class is only to hold the game state
 // to make the UI code more ergonomic
 
-type PossibleTurn = {
-  canHavebarricade: Spot[];
-  hasBarricade: Spot[];
-  myPawns: Pawn[];
-  otherPawns: Pawn[];
-  allSpots: Spot[];
-  moves: Turn[];
-};
 // Todo hade kunnat göra varje ruta så att den har en LEFT, RIGHT, FORWARD, BACK ist för leads to osv
 
 export function nextTurnOptions(state: GameState): PossibleTurn {
