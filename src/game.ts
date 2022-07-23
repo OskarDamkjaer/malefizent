@@ -40,6 +40,7 @@ export type PossibleTurn = {
   allSpots: Spot[];
   moves: Turn[];
 };
+
 export type Bot = { doMove: (options: PossibleTurn) => Turn };
 export type BotSet = [Bot, Bot, Bot, Bot];
 

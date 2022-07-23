@@ -2,14 +2,15 @@
   export let player: Color;
   export let expand: boolean = false;
   export let startingBot: Bot = randomBot;
-  import { EditorState, EditorView, basicSetup } from "@codemirror/basic-setup";
-  import { keymap } from "@codemirror/view";
-  import { javascript } from "@codemirror/lang-javascript";
-  import { indentWithTab } from "@codemirror/commands";
   import { onMount } from "svelte";
   import type { Color } from "./game";
   import { loadPlayerCode, playerConstants } from "./helpers";
   import { pickableBots, randomBot } from "./builtinBots";
+  import { basicSetup  } from "codemirror";
+  import {EditorState } from "@codemirror/state"
+  import {EditorView, keymap} from "@codemirror/view"
+  import {indentWithTab} from "@codemirror/commands"
+  import { javascript } from "@codemirror/lang-javascript";
   type Bot = { name: string; author: string; code: string };
 
   let expanded = expand;
@@ -22,7 +23,7 @@
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
-        extensions: [basicSetup, keymap.of([indentWithTab]), javascript()],
+        extensions: [basicSetup, keymap.of([indentWithTab]), javascript({typescript: true})],
         doc: code,
       }),
       parent: document.getElementById(playerConstants[player].editorId),

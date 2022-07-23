@@ -18,23 +18,46 @@ export const randomBot = {
 export const playerStarter = {
   name: "CustomBotStarter",
   author: "you",
-  code: `
-/* Your job is to create a function called "doTurn" that a parameter of type PossibleTurn (see type ref) 
-and one of its "moves". 
+  code: `/* Below you'll find a function "doTurn" selecting a random move.  It's up to you to improve it. 
+If your code does not return within ~200ms or selects an illegal move, one will be chosen at random instead.  */
 
-If turn chosen turn is invalid or your function took longer than 200ms to return, a random
- turn is chosen instead. 
-
-You're blue. Dabadee dabedai.
- */ 
-
-function doTurn(possibleTurns) {
-  const {moves} = possibleTurns
+function doTurn(boardState: {
+  myPawns: Pawn[];
+  otherPawns: Pawn[];
+  allSpots: Spot[];
+  canHavebarricade: Spot[];
+  hasBarricade: Spot[];
+  moves: Turn[];
+}): Turn {
   //console.log(turnOptions[0])
 
   const randomMove = moves[Math.floor(Math.random() * moves.length)]
   return randomMove;
 }
+
+type Color = "BLUE" | "RED" | "YELLOW" | "GREEN";
+type Position = { x: number; y: number }; 
+
+type Pawn = {
+  color: Color;
+  number: number;
+  position: Position | null;
+};
+
+type Spot = {
+  contains: "OUTSIDE" | "NORMAL" | "BARRICADE" | "GOAL";
+  startingPointColor?: Color;
+  connectedTo: Position[];
+  unBarricadeable?: boolean;
+  goalDistance?: number;
+  position: Position;
+};
+
+type Turn = {
+  pawn: Pawn;
+  spot: Spot;
+  newBarricadePosition?: Position;
+};
 `,
 };
 
@@ -70,7 +93,7 @@ export const postulateBot = {
   author: "built-in",
   code: `
 function doTurn(possibleTurns) {
-  const movesThatGoForward = turns.filter(turn => turn.);
+  const movesThatGoForward = turns.filter(turn => turn);
   return;
 }
 `,
