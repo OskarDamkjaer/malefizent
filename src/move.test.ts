@@ -4,7 +4,7 @@ import {
   innerFindPaths,
   firstStepForColor,
   createGameState,
-} from "./game";
+} from "../text-editors/game";
 const f = createField();
 const s = createGameState();
 const GOAL_POSITION = { x: 8, y: 14 };

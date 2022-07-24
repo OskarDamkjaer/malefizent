@@ -1,4 +1,4 @@
-import { createGameState, prepareTurn, access, doTurn } from "./game";
+import { createGameState, prepareTurn, access, doTurn } from "../text-editors/game";
 const state = createGameState(1);
 
 test("prepareTurn - first turn", () => {
