@@ -1,0 +1,72 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dev",
+      "detail": "Start development server",
+      "type": "npm",
+      "script": "dev",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "group": "dev",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "test",
+      "detail": "Run tests",
+      "type": "npm",
+      "script": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "test:watch",
+      "detail": "Start TDD session",
+      "type": "npm",
+      "script": "test:watch",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "group": "dev",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "tdd",
+      "detail": "Start TDD session",
+      "dependsOn": ["dev", "test:watch"],
+      "problemMatcher": []
+    },
+    {
+      "label": "build:lib",
+      "detail": "Build library",
+      "type": "npm",
+      "script": "build:lib",
+      "problemMatcher": []
+    },
+    {
+      "label": "build:demo",
+      "detail": "Build demo",
+      "type": "npm",
+      "script": "build",
+      "path": "demo",
+      "problemMatcher": []
+    },
+    {
+      "label": "deploy",
+      "detail": "Deploy demo",
+      "type": "npm",
+      "script": "deploy",
+      "problemMatcher": []
+    }
+  ]
+}

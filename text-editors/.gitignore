@@ -1,0 +1,11 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+yarn-error.log
+.vercel
+.env
+
+src/extensions/typescript/types
+demo/public
